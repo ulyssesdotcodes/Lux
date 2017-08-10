@@ -57,7 +57,7 @@ voteNums = zipWith (\i c -> fix (BS.pack $ "voteNum" ++ show i) c) [0..] [constC
 voteCount r v = count' ((countThresh ?~ (float 0.5)) . (countReset ?~ r) . (countResetCondition ?~ int 0)) v
 voteEnabled = ceil $ chopChanName "timer_fraction" voteTimer
 
-maxVote = fix "maxVote" $ fan' ((fanOp .~ (Just $ int 1)) . (fanOffNeg ?~ bool False)) $
+maxVote = fix "maxVote" $ cookC $ fan' ((fanOp .~ (Just $ int 1)) . (fanOffNeg ?~ bool False)) $
             math' ((mathCombChops ?~ (int 4)) . (mathInt ?~ (int 2)))
               [ mergeC $ voteCount (fix "resetVotes" $ constC [float 0]) <$> voteNums
               , math' (mathCombChops ?~ (int 7)) $ voteCount (fix "resetVotes" $ constC [float 0]) <$> voteNums
@@ -65,9 +65,11 @@ maxVote = fix "maxVote" $ fan' ((fanOp .~ (Just $ int 1)) . (fanOffNeg ?~ bool F
 
 -- Screens
 
-voteScreen = compT 0 $ (\i -> (transformT' ((transformTranslate .~ (emptyV2 & _2 ?~ float (0.33 - (fromIntegral i) * 0.33))))) . textT $ (cell (int 0, int i) currentVotes)) <$> [0..2]
+voteScreen = compT 0 $ (lastVote & transformT' (transformTranslate._2 ?~ float 0.4)):((\i -> (transformT' ((transformTranslate .~ (emptyV2 & _2 ?~ float (0.33 - (fromIntegral i) * 0.33))))) . textT $ (cell (int 0, int i) currentVotes)) <$> [0..2])
 
 lastVote = textT $ ternary (cell (numRows voteValueCache !+ int (-1), int 0) voteValueCache !== bstr "None") (str "") (cell (numRows voteValueCache !+ int (-1), int 0) voteValueCache)
+
+
 
 --Server
 
