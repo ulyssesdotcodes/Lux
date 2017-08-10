@@ -25,8 +25,8 @@ voteToBS (VoteEffect id n) = BS.concat [id, n]
 -- Run
 
 go = do r <- newIORef mempty
-        eft <- BS.readFile "TD/scripts/Lux/effectChangeScript.py"
-        run2 r [sendServer, server, peers, closepeer] [voteScreen]
+        eft <- BS.readFile "TD/scripts/effectChangeScript.py"
+        run2 r [sendServer, server, peers, closepeer] [outT $ voteScreen, lastVote]
 
 votesTable = voteToBS <$> [ VoteMovie "a" "A"
                           , VoteMovie "b" "B"
@@ -40,22 +40,34 @@ votesList = [ ["a", "b", "c"]
             , ["b", "a", "c"]
             ]
 
-voteTimer = timerSeg' ((timerShowSeg ?~ bool True) . (timerCallbacks ?~ fileD "scripts/Lux/timer_callbacks.py"))
-  [ TimerSegment 0 8
-  , TimerSegment 0 8
-  , TimerSegment 0 8
-  , TimerSegment 0 8
-  , TimerSegment 0 8
-  , TimerSegment 0 8
-  ]
+voteResultCache = fix "voteResults" $ table $ mempty
+voteValueCache = fix "voteValues" $ table $ mempty
 
-voteTick = chopChanName "segment" voteTimer
+
+voteTimer = timerSeg' ((timerShowSeg ?~ bool True) . (timerCallbacks ?~
+                                                      fileD' (datVars .~ [ ("resultCache", Resolve voteResultCache)
+                                                                         , ("valueCache", Resolve voteValueCache)
+                                                                         , ("maxvote", Resolve maxVote)
+                                                                         , ("votesList", Resolve votes)
+                                                                         ]) "scripts/timer_callbacks.py")) . ((TimerSegment 0 0.1):)$ (\_ -> TimerSegment 0 8) <$> votesList
+
+voteTick = casti (chopChanName "segment" voteTimer) !+ int (-1)
 currentVotes = selectD' ((selectDRStartI ?~ casti voteTick) . (selectDREndI ?~ casti voteTick)) votes
 voteNums = zipWith (\i c -> fix (BS.pack $ "voteNum" ++ show i) c) [0..] [constC [(float 0)], constC [(float 0)], constC [(float 0)]]
+voteCount r v = count' ((countThresh ?~ (float 0.5)) . (countReset ?~ r) . (countResetCondition ?~ int 0)) v
+voteEnabled = ceil $ chopChanName "timer_fraction" voteTimer
+
+maxVote = fix "maxVote" $ fan' ((fanOp .~ (Just $ int 1)) . (fanOffNeg ?~ bool False)) $
+            math' ((mathCombChops ?~ (int 4)) . (mathInt ?~ (int 2)))
+              [ mergeC $ voteCount (fix "resetVotes" $ constC [float 0]) <$> voteNums
+              , math' (mathCombChops ?~ (int 7)) $ voteCount (fix "resetVotes" $ constC [float 0]) <$> voteNums
+              ]
 
 -- Screens
 
 voteScreen = compT 0 $ (\i -> (transformT' ((transformTranslate .~ (emptyV2 & _2 ?~ float (0.33 - (fromIntegral i) * 0.33))))) . textT $ (cell (int 0, int i) currentVotes)) <$> [0..2]
+
+lastVote = textT $ cell (numRows voteValueCache !+ int (-1), int 0) voteValueCache
 
 --Server
 
@@ -63,18 +75,20 @@ server = fix "server"
   (fileD' (datVars .~ [ ("website", Resolve website)
                      , ("control", Resolve control)
                      , ("timer", Resolve voteTimer)
+                     , ("resultCache", Resolve voteResultCache)
+                     , ("valueCache", Resolve voteValueCache)
                      -- , ("movieTimer", Resolve movieTimer)
                      -- , ("base", Resolve movieout)
                      -- , ("outf", Resolve finalout)
-                     ] ++ zipWith (\i v -> (BS.pack $ "vote" ++ show i, Resolve v)) [0..] voteNums) "scripts/Lux/server.py")
+                     ] ++ zipWith (\i v -> (BS.pack $ "vote" ++ show i, Resolve v)) [0..] voteNums) "scripts/server.py")
         & tcpipD' ((tcpipMode ?~ (int 1)) . (tcpipCallbackFormat ?~ (int 2)))
 
 peers = fix "myPeers" $ textD ""
 closepeer = fix "closePeer" $ textD "args[0].close()"
-website = fileD "scripts/Lux/website.html"
-control = fileD "scripts/Lux/control.html"
+website = fileD "scripts/website.html"
+control = fileD "scripts/control.html"
 
-sendServer = datExec' (deTableChange ?~ "  mod.server.updateVotes(dat[0, 0].val, dat[0,1].val, dat[0,2].val)") currentVotes
+sendServer = datExec' (deTableChange ?~ "  if dat[0, 0]: mod.server.updateVotes(dat[0, 0].val, dat[0,1].val, dat[0,2].val)") currentVotes
 
 
 

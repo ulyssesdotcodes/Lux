@@ -63,15 +63,20 @@ def receive(dat, rowIndex, message, bytes, peer):
                 voteNumOp.par.value0.pulse(1, frames=2)
             elif payload.get('type') == "start":
               timer = op(me.fetch('timer', '--')[1:])
+              votesResults = op(me.fetch('resultCache', '--')[1:])
+              votesValues = op(me.fetch('valueCache', '--')[1:])
               timer.par.start.pulse()
               timer.par.play = 0
-              op(me.fetch('movieTimer', '--')[1:]).par.start.pulse()
-              baseVid = op(me.fetch('base', '--')[1:])
-              while baseVid.inputs[0].type != "switch":
-                baseVid.inputs[0].destroy()
+              votesResults.clear()
+              votesValues.clear()
+
+              # op(me.fetch('movieTimer', '--')[1:]).par.start.pulse()
+              # baseVid = op(me.fetch('base', '--')[1:])
+              # while baseVid.inputs[0].type != "switch":
+              #   baseVid.inputs[0].destroy()
             elif payload.get('type') == "approvevotes":
-              op(me.fetch('timer', '--')[1:]).par.play = 1
               enableVotes(1)
+              op(me.fetch('timer', '--')[1:]).par.play = 1
 
         except:
             if fullMsg['payload'] == b'\x03\xe9':
@@ -82,7 +87,7 @@ def receive(dat, rowIndex, message, bytes, peer):
     return
 
 def sendJson(data):
-    peerList = me.fetch('peerList')
+    peerList = me.fetch('peerList', {})
     returnMsg = json.dumps(data)
     packedMsg = encode(returnMsg.encode('utf-8'))
     packedMsg = b''.join(packedMsg)
@@ -92,13 +97,14 @@ def sendJson(data):
 
 
 def updateVotes(v1, v2, v3):
+    print("votes: " + str(v1) + str(v2) + str(v3))
     sendJson({'type': 'voteChange', 'vote1':v1, 'vote2':v2, 'vote3':v3})
     return
 
 def enableVotes(enabled):
     timer = op(me.fetch('timer', '--')[1:])
     segdat = op(timer.par.segdat)
-    seg = segdat[int(timer['segment']), 'length']
+    seg = segdat[int(timer['segment']) + 1, 'length']
     sendJson({'type': 'votesEnabled', 'enabled': enabled, 'endtime': time.time() + seg})
     return
 
