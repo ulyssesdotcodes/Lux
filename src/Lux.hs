@@ -67,7 +67,7 @@ maxVote = fix "maxVote" $ fan' ((fanOp .~ (Just $ int 1)) . (fanOffNeg ?~ bool F
 
 voteScreen = compT 0 $ (\i -> (transformT' ((transformTranslate .~ (emptyV2 & _2 ?~ float (0.33 - (fromIntegral i) * 0.33))))) . textT $ (cell (int 0, int i) currentVotes)) <$> [0..2]
 
-lastVote = textT $ cell (numRows voteValueCache !+ int (-1), int 0) voteValueCache
+lastVote = textT $ ternary (cell (numRows voteValueCache !+ int (-1), int 0) voteValueCache !== bstr "None") (str "") (cell (numRows voteValueCache !+ int (-1), int 0) voteValueCache)
 
 --Server
 
