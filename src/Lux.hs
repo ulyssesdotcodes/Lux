@@ -2,95 +2,272 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 module Lux where
+
+import Debug.Trace
 
 import LambdaDesigner.Op
 import LambdaDesigner.Lib
 
-import Prelude hiding (floor, mod)
-
+import Control.Concurrent
+import Control.Concurrent.STM
+import Control.Concurrent.Async
+import Control.Exception (finally, catch)
 import Control.Lens
+import Control.Lens.Reified
+import Control.Monad (forM_, forever)
+import Control.Monad.State.Lazy
+import Data.Aeson as A
 import Data.IORef
+import Data.List
 import Data.Matrix
+import Data.Maybe
+import Data.Text (Text)
+import qualified Network.WebSockets as WS
+
 
 import qualified Data.ByteString.Char8 as BS
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
 
-data Vote = VoteMovie BS.ByteString BS.ByteString
-          | VoteEffect BS.ByteString BS.ByteString
+type Client = (Int, WS.Connection)
 
-voteToBS (VoteMovie id n) = BS.concat [id, n]
-voteToBS (VoteEffect id n) = BS.concat [id, n]
+type TOPRunner = (Tree TOP -> IO ())
+data ServerState =
+  ServerState { _clients :: [Client]
+              , _tdState :: TDState
+              , _runner :: TOPRunner
+              }
+
+data Message = Connecting | RegisterVote Int | NextVote
+
+data OutputState = Tree TOP
+
+instance FromJSON Message where
+  parseJSON = withObject "message" $ \o -> do
+    ty <- o .: "type"
+    case ty of
+      "connecting" -> return Connecting
+      "vote" -> RegisterVote <$> o .: "index"
+      "nextVote" -> return NextVote
+      _ -> fail ("Unknown type " ++ ty)
+
+data OutMsg = Votes [String]
+
+instance ToJSON OutMsg where
+  toJSON (Votes ns) = object ["type" A..= "vote", "votes" A..= ns]
+
+data TDState = TDState { _tallies :: [Int]
+                       , _currentVote :: Int
+                       , _lastVoteWinner :: Maybe Int
+                       } deriving Show
+
+data Vote = Vote { _name :: String }
+
+makeLenses ''TDState
+makeLenses ''Vote
+makeLenses ''ServerState
+
+voteList = [ [Vote "a", Vote "b", Vote "c"]
+           , [Vote "b", Vote "c", Vote "a"]
+           , [Vote "c", Vote "a", Vote "b"]
+           ]
 
 -- Run
 
-go = do r <- newIORef mempty
-        eft <- BS.readFile "TD/scripts/effectChangeScript.py"
-        run2 r [sendServer, server, peers, closepeer] [outT $ voteScreen, lastVote]
+go = do
+  r <- topRunner
+  let newState = newServerState r
+  state <- newMVar newState
+  r $ renderTDState $ newState ^. tdState
+  serve state
 
-votesTable = voteToBS <$> [ VoteMovie "a" "A"
-                          , VoteMovie "b" "B"
-                          , VoteMovie "c" "C"
-                          , VoteMovie "d" "D"
-                          ]
+loop :: TVar Int -> IO ()
+loop count = do
+  timer <- newTimer (1000000)
+  waitTimer timer
+  r <- topRunner
+  cv <- readTVarIO count
+  r $ textT $ str $ show cv
+  atomically $ modifyTVar count (+1)
+  loop count
 
-votes = table $ fromLists votesList
-votesList = [ ["a", "b", "c"]
-            , ["c", "b", "a"]
-            , ["b", "a", "c"]
-            ]
+renderTDState :: TDState -> Tree TOP
+renderTDState (TDState {_currentVote, _tallies, _lastVoteWinner}) =
+  compT 0 $ zipWith renderVote [0..] _tallies ++ maybeToList (resText . (++) "Last vote: " . _name <$> (_lastVoteWinner >>= \i -> voteList ^? ((ix ((_currentVote - 1) `mod` length voteList))) . (ix i)))
+  where
+    renderVote optionidx tally =
+      (resText .  (flip (++) $ show tally) . _name $ currentVotes !! optionidx)
+      & transformT' (transformTranslate .~ (Nothing, Just . float $ (1 - 0.33 * (fromIntegral $ optionidx) - 0.66)))
+    currentVotes = voteList !! _currentVote
 
-voteResultCache = fix "voteResults" $ table $ mempty
-voteValueCache = fix "voteValues" $ table $ mempty
+resText = textT' (topResolution .~ iv2 (1920, 1080)) . str
+
+modifyTDState :: (TDState -> TDState) -> MVar ServerState -> IO ()
+modifyTDState f state = do
+  s <- modifyMVar state $ (\s -> return (s, s)) . (tdState %~ f)
+  s ^. runner $ renderTDState $ s ^. tdState
+  traceShowM (s ^. tdState)
+  broadcast (Votes $ _name <$> voteList  !! (s ^. tdState . currentVote)) $ s ^. clients
+
+-- Server
+
+newServerState :: TOPRunner -> ServerState
+newServerState = ServerState [] (TDState [0, 0, 0] 0 Nothing)
+
+serve :: MVar ServerState -> IO ()
+serve state = do
+  _ <- async $ WS.runServer "127.0.0.1" 9160 . application $ state
+  threadDelay 1000000000
+
+application :: MVar ServerState -> WS.ServerApp
+application state pending = do
+  conn <- WS.acceptRequest pending
+  WS.forkPingThread conn 30
+  jmsg <- WS.receiveData conn
+  mstate <- readMVar state
+  let mclients = mstate ^. clients
+      id = length mclients
+  case decode jmsg of
+    (Just Connecting) ->
+        flip finally disconnect $ do
+          liftIO $ modifyMVar_ state $ pure . (clients %~ ((:) (id, conn)))
+          receive conn state (id, conn)
+      where
+        disconnect = modifyMVar_ state (return . (clients %~ filter ((/= id) . fst)))
+    _ -> WS.sendTextData conn ("Nope" :: Text)
+
+receive :: WS.Connection -> MVar ServerState -> Client -> IO ()
+receive conn state (id, _) = do
+  thr <- async $ forever $ do
+    msg <- WS.receiveData conn
+    traceShowM msg
+    case decode msg of
+      (Just (RegisterVote i)) -> do
+        modifyTDState (updateVote i) state
+      (Just NextVote) -> do
+        modifyTDState nextVote state
+      _ -> putStrLn "Unrecognized message"
+  wait thr
+
+broadcast :: OutMsg -> [Client] -> IO ()
+broadcast msg cs = do
+  forM_ cs $ \(_, conn) -> WS.sendTextData conn (encode msg)
+
+-- Votes
+
+updateVote :: Int -> TDState -> TDState
+updateVote id = tallies . ix id %~ (+ 1)
+
+nextVote :: TDState -> TDState
+nextVote (TDState { _currentVote, _tallies }) =
+  let
+    cv = mod (_currentVote + 1) (length voteList)
+    votes = (!!) voteList
+    maxIdx = listToMaybe . map fst . reverse . sortOn snd . zip [0..]
+  in
+    (TDState (take (length $ votes cv) $ repeat 0) cv (maxIdx _tallies))
 
 
-voteTimer = timerSeg' ((timerShowSeg ?~ bool True) . (timerCallbacks ?~
-                                                      fileD' (datVars .~ [ ("resultCache", Resolve voteResultCache)
-                                                                         , ("valueCache", Resolve voteValueCache)
-                                                                         , ("maxvote", Resolve maxVote)
-                                                                         , ("votesList", Resolve votes)
-                                                                         ]) "scripts/timer_callbacks.py")) . ((TimerSegment 0 0.1):)$ (\_ -> TimerSegment 0 8) <$> votesList
 
-voteTick = casti (chopChanName "segment" voteTimer) !+ int (-1)
-currentVotes = selectD' ((selectDRStartI ?~ casti voteTick) . (selectDREndI ?~ casti voteTick)) votes
-voteNums = zipWith (\i c -> fix (BS.pack $ "voteNum" ++ show i) c) [0..] [constC [(float 0)], constC [(float 0)], constC [(float 0)]]
-voteCount r v = count' ((countThresh ?~ (float 0.5)) . (countReset ?~ r) . (countResetCondition ?~ int 0)) v
-voteEnabled = ceil $ chopChanName "timer_fraction" voteTimer
+-- Timer
 
-maxVote = fix "maxVote" $ cookC $ fan' ((fanOp .~ (Just $ int 1)) . (fanOffNeg ?~ bool False)) $
-            math' ((mathCombChops ?~ (int 4)) . (mathInt ?~ (int 2)))
-              [ mergeC $ voteCount (fix "resetVotes" $ constC [float 0]) <$> voteNums
-              , math' (mathCombChops ?~ (int 7)) $ voteCount (fix "resetVotes" $ constC [float 0]) <$> voteNums
-              ]
+data TimerState = Start | Stop
+type Timer = (TVar TimerState, TMVar ())
+waitTimer :: Timer -> IO ()
+waitTimer (_, timer) = atomically $ readTMVar timer
 
--- Screens
+stopTimer :: Timer -> IO ()
+stopTimer (state, _) = atomically $ writeTVar state Stop
 
-voteScreen = compT 0 $ (lastVote & transformT' (transformTranslate._2 ?~ float 0.4)):((\i -> (transformT' ((transformTranslate .~ (emptyV2 & _2 ?~ float (0.33 - (fromIntegral i) * 0.33))))) . textT $ (cell (int 0, int i) currentVotes)) <$> [0..2])
+newTimer :: Int -> IO Timer
+newTimer n = do
+    state <- atomically $ newTVar Start
+    timer <- atomically $ newEmptyTMVar
+    forkIO $ do
+        threadDelay n
+        atomically $ do
+            runState <- readTVar state
+            case runState of
+                Start -> putTMVar timer ()
+                Stop  -> return ()
+    return (state, timer)
 
-lastVote = textT $ ternary (cell (numRows voteValueCache !+ int (-1), int 0) voteValueCache !== bstr "None") (str "") (cell (numRows voteValueCache !+ int (-1), int 0) voteValueCache)
+-- TD Handling
+
+
+-- -- TDData
+
+-- votesTable = voteToBS <$> [ VoteMovie "a" "A"
+--                           , VoteMovie "b" "B"
+--                           , VoteMovie "c" "C"
+--                           , VoteMovie "d" "D"
+--                           ]
+
+-- votes = table $ fromLists votesList
+-- votesList = [ ["a", "b", "c"]
+--             , ["c", "b", "a"]
+--             , ["b", "a", "c"]
+--             ]
+
+-- voteResultCache = fix "voteResults" $ table $ mempty
+-- voteValueCache = fix "voteValues" $ table $ mempty
+
+
+-- voteTimer = timerSeg' ((timerShowSeg ?~ bool True) . (timerCallbacks ?~
+--                                                       fileD' (datVars .~ [ ("resultCache", Resolve voteResultCache)
+--                                                                          , ("valueCache", Resolve voteValueCache)
+--                                                                          , ("maxvote", Resolve maxVote)
+--                                                                          , ("votesList", Resolve votes)
+--                                                                          ]) "scripts/timer_callbacks.py")) . ((TimerSegment 0 0.1):)$ (\_ -> TimerSegment 0 8) <$> votesList
+
+-- voteTick = casti (chopChanName "segment" voteTimer) !+ int (-1)
+-- currentVotes = selectD' ((selectDRStartI ?~ casti voteTick) . (selectDREndI ?~ casti voteTick)) votes
+-- voteNums = zipWith (\i c -> fix (BS.pack $ "voteNum" ++ show i) c) [0..] [constC [(float 0)], constC [(float 0)], constC [(float 0)]]
+-- voteCount r v = count' ((countThresh ?~ (float 0.5)) . (countReset ?~ r) . (countResetCondition ?~ int 0)) v
+-- voteEnabled = ceil $ chopChanName "timer_fraction" voteTimer
+
+-- maxVote = fix "maxVote" $ cookC $ fan' ((fanOp .~ (Just $ int 1)) . (fanOffNeg ?~ bool False)) $
+--             math' ((mathCombChops ?~ (int 4)) . (mathInt ?~ (int 2)))
+--               [ mergeC $ voteCount (fix "resetVotes" $ constC [float 0]) <$> voteNums
+--               , math' (mathCombChops ?~ (int 7)) $ voteCount (fix "resetVotes" $ constC [float 0]) <$> voteNums
+--               ]
+
+-- -- Screens
+
+-- voteScreenRes = iv2 (1920, 1080)
+
+-- voteScreen = compT 0 $ (lastVoteT & transformT' (transformTranslate._2 ?~ float 0.4)):((\i -> (transformT' ((transformTranslate .~ (emptyV2 & _2 ?~ float (0.33 - (fromIntegral i) * 0.33))))) . textT' (topResolution .~ voteScreenRes) $ (cell (int 0, int i) currentVotes)) <$> [0..2])
+
+-- lastVote = cell (numRows voteValueCache !+ int (-1), int 0) voteValueCache
+
+-- lastVoteT = textT' (topResolution .~ voteScreenRes) $ ternary (lastVote !== bstr "None") (str "") $ str "Last Vote: " !+ lastVote
 
 
 
---Server
+-- --Server
 
-server = fix "server"
-  (fileD' (datVars .~ [ ("website", Resolve website)
-                     , ("control", Resolve control)
-                     , ("timer", Resolve voteTimer)
-                     , ("resultCache", Resolve voteResultCache)
-                     , ("valueCache", Resolve voteValueCache)
-                     -- , ("movieTimer", Resolve movieTimer)
-                     -- , ("base", Resolve movieout)
-                     -- , ("outf", Resolve finalout)
-                     ] ++ zipWith (\i v -> (BS.pack $ "vote" ++ show i, Resolve v)) [0..] voteNums) "scripts/server.py")
-        & tcpipD' ((tcpipMode ?~ (int 1)) . (tcpipCallbackFormat ?~ (int 2)))
+-- server = fix "server"
+--   (fileD' (datVars .~ [ ("website", Resolve website)
+--                      , ("control", Resolve control)
+--                      , ("timer", Resolve voteTimer)
+--                      , ("resultCache", Resolve voteResultCache)
+--                      , ("valueCache", Resolve voteValueCache)
+--                      -- , ("movieTimer", Resolve movieTimer)
+--                      -- , ("base", Resolve movieout)
+--                      -- , ("outf", Resolve finalout)
+--                      ] ++ zipWith (\i v -> (BS.pack $ "vote" ++ show i, Resolve v)) [0..] voteNums) "scripts/server.py")
+--         & tcpipD' ((tcpipMode ?~ (int 1)) . (tcpipCallbackFormat ?~ (int 2)))
 
-peers = fix "myPeers" $ textD ""
-closepeer = fix "closePeer" $ textD "args[0].close()"
-website = fileD "scripts/website.html"
-control = fileD "scripts/control.html"
+-- peers = fix "myPeers" $ textD ""
+-- closepeer = fix "closePeer" $ textD "args[0].close()"
+-- website = fileD "scripts/website.html"
+-- control = fileD "scripts/control.html"
 
-sendServer = datExec' (deTableChange ?~ "  if dat[0, 0]: mod.server.updateVotes(dat[0, 0].val, dat[0,1].val, dat[0,2].val)") currentVotes
+-- sendServer = datExec' (deTableChange ?~ "  if dat[0, 0]: mod.server.updateVotes(dat[0, 0].val, dat[0,1].val, dat[0,2].val)") currentVotes
 
 
 

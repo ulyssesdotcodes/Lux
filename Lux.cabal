@@ -16,10 +16,16 @@ library
     hs-source-dirs:      src
     exposed-modules:     Lux
     build-depends:       base >= 4.7 && < 5
+                       , aeson
+                       , async
                        , bytestring >= 0.10
                        , LambdaDesigner
                        , lens >= 4.15
                        , matrix >= 0.3
+                       , mtl
+                       , stm
+                       , text
+                       , websockets
 
                         
     default-language:    Haskell2010
