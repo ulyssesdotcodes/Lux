@@ -9,8 +9,8 @@ module Lux where
 
 import Debug.Trace
 
-import LambdaDesigner.Op
-import LambdaDesigner.Lib
+import LambdaDesigner.Op as LD
+import LambdaDesigner.Lib as LD
 
 import Control.Concurrent
 import Control.Concurrent.STM
@@ -63,9 +63,13 @@ instance ToJSON OutMsg where
 data TDState = TDState { _tallies :: [Int]
                        , _currentVote :: Int
                        , _lastVoteWinner :: Maybe Int
+                       , _voteTimer :: Maybe Int
                        } deriving Show
 
 data Vote = Vote { _name :: String }
+
+data TimerState = Start | Stop
+type Timer = (TVar TimerState, TMVar ())
 
 makeLenses ''TDState
 makeLenses ''Vote
@@ -87,7 +91,7 @@ go = do
 
 loop :: TVar Int -> IO ()
 loop count = do
-  timer <- newTimer (1000000)
+  timer <- newTimer (1000)
   waitTimer timer
   r <- topRunner
   cv <- readTVarIO count
@@ -96,27 +100,29 @@ loop count = do
   loop count
 
 renderTDState :: TDState -> Tree TOP
-renderTDState (TDState {_currentVote, _tallies, _lastVoteWinner}) =
-  compT 0 $ zipWith renderVote [0..] _tallies ++ maybeToList (resText . (++) "Last vote: " . _name <$> (_lastVoteWinner >>= \i -> voteList ^? ((ix ((_currentVote - 1) `mod` length voteList))) . (ix i)))
+renderTDState (TDState {_currentVote, _tallies, _lastVoteWinner, _voteTimer}) =
+  compT 0 $ zipWith renderVote [0..] _tallies ++ maybeToList (resText . (++) "Last vote: " . _name <$> (_lastVoteWinner >>= \i -> voteList ^? ((ix ((_currentVote - 1) `mod` length voteList))) . (ix i))) ++ maybeToList ((\t -> resTexts . caststr . LD.floor . ((!*) (float (fromIntegral t / 1000.0))) . ((!+) (float 1) . (!*) (float (-1))) . chopChanName "timer_fraction" . (timerS' (timerStart .~ True)) . float . (flip (/) 1000.0) . fromIntegral $ t) <$> _voteTimer)
   where
     renderVote optionidx tally =
       (resText .  (flip (++) $ show tally) . _name $ currentVotes !! optionidx)
       & transformT' (transformTranslate .~ (Nothing, Just . float $ (1 - 0.33 * (fromIntegral $ optionidx) - 0.66)))
     currentVotes = voteList !! _currentVote
 
-resText = textT' (topResolution .~ iv2 (1920, 1080)) . str
+resText = resTexts . str
+resTexts = textT' (topResolution .~ iv2 (1920, 1080))
 
 modifyTDState :: (TDState -> TDState) -> MVar ServerState -> IO ()
 modifyTDState f state = do
   s <- modifyMVar state $ (\s -> return (s, s)) . (tdState %~ f)
   s ^. runner $ renderTDState $ s ^. tdState
   traceShowM (s ^. tdState)
-  broadcast (Votes $ _name <$> voteList  !! (s ^. tdState . currentVote)) $ s ^. clients
+  let tdVal g = s ^. tdState . g
+  broadcast (Votes $ fmap _name $ take (length $ tdVal tallies) . ((!!) voteList) $ (tdVal currentVote)) $ s ^. clients
 
 -- Server
 
 newServerState :: TOPRunner -> ServerState
-newServerState = ServerState [] (TDState [0, 0, 0] 0 Nothing)
+newServerState = ServerState [] (TDState [0, 0, 0] 0 Nothing Nothing)
 
 serve :: MVar ServerState -> IO ()
 serve state = do
@@ -149,7 +155,13 @@ receive conn state (id, _) = do
       (Just (RegisterVote i)) -> do
         modifyTDState (updateVote i) state
       (Just NextVote) -> do
-        modifyTDState nextVote state
+        let voteLength = 10000
+        timer <- newTimer voteLength
+        __ <- forkIO $ do
+          waitTimer timer
+          modifyTDState endVote state
+        modifyTDState (nextVote voteLength) state
+
       _ -> putStrLn "Unrecognized message"
   wait thr
 
@@ -162,21 +174,23 @@ broadcast msg cs = do
 updateVote :: Int -> TDState -> TDState
 updateVote id = tallies . ix id %~ (+ 1)
 
-nextVote :: TDState -> TDState
-nextVote (TDState { _currentVote, _tallies }) =
+nextVote :: Int -> TDState -> TDState
+nextVote timer td@(TDState { _currentVote, _tallies, _lastVoteWinner }) =
   let
-    cv = mod (_currentVote + 1) (length voteList)
     votes = (!!) voteList
+  in
+    td & (tallies .~ take (length $ votes _currentVote) (repeat 0)) . (voteTimer ?~ timer)
+
+endVote :: TDState -> TDState
+endVote td@(TDState { _tallies })=
+  let
     maxIdx = listToMaybe . map fst . reverse . sortOn snd . zip [0..]
   in
-    (TDState (take (length $ votes cv) $ repeat 0) cv (maxIdx _tallies))
-
+    td & ((currentVote %~ flip mod (length voteList) . (+ 1)) . (tallies .~ []) . (voteTimer .~ Nothing) . (lastVoteWinner .~ maxIdx _tallies))
 
 
 -- Timer
 
-data TimerState = Start | Stop
-type Timer = (TVar TimerState, TMVar ())
 waitTimer :: Timer -> IO ()
 waitTimer (_, timer) = atomically $ readTMVar timer
 
@@ -188,7 +202,7 @@ newTimer n = do
     state <- atomically $ newTVar Start
     timer <- atomically $ newEmptyTMVar
     forkIO $ do
-        threadDelay n
+        threadDelay $ 1000 * n
         atomically $ do
             runState <- readTVar state
             case runState of
