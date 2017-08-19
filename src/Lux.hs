@@ -76,6 +76,8 @@ data DeckIndex = Left | Right deriving (Show, Eq)
 
 data Vote = MovieVote { _fileId :: Int
                       }
+          | FunVote { _funId :: Int
+                    }
 
 data TimerState = Start | Stop
 type Timer = (TVar TimerState, TMVar ())
@@ -86,7 +88,10 @@ makeLenses ''ServerState
 
 voteList = [ [MovieVote 0, MovieVote 1, MovieVote 2]
            , [MovieVote 2, MovieVote 0, MovieVote 1]
+           , [FunVote 0, FunVote 1, FunVote 2, FunVote 3]
            , [MovieVote 1, MovieVote 2, MovieVote 0]
+           , [FunVote 0, FunVote 1, FunVote 2, FunVote 3]
+           , [MovieVote 0, MovieVote 2, MovieVote 1]
            ]
 
 movies = M.fromList [ (0, ("Holme/hlme000a.mp4", "Basic"))
@@ -94,8 +99,15 @@ movies = M.fromList [ (0, ("Holme/hlme000a.mp4", "Basic"))
                     , (2, ("Holme/hlme000d.mp4", "Airdancer"))
                     ]
 
+funBreak = M.fromList[ (0, "TSC")
+                     , (1, "Dance Party")
+                     , (2, "Magic show")
+                     , (3, "Snacks")
+                     ]
+
 voteText :: Vote -> BS.ByteString
 voteText (MovieVote i) = movies ! i ^. _2
+voteText (FunVote i) = funBreak ! i
 
 -- Run
 
@@ -235,6 +247,8 @@ applyVote (MovieVote id) td =
     td &
       (movieDecks . accessor .~ (movies ^. ((ix id) . _1))) .
       (movieDeckIndex %~ B.bool Left Right . ((==) Left))
+
+applyVote (FunVote _) td = td
 
 
 -- Timer
