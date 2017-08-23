@@ -21,7 +21,7 @@ import Control.Exception (finally, catch)
 import Control.Lens
 import Control.Lens.Reified
 import Control.Monad (forM_, forever)
-import Control.Monad.State.Lazy
+import Control.Monad.State.Lazy hiding (fix)
 import Data.Aeson as A
 import qualified Data.Bool as B
 import Data.IORef
@@ -39,14 +39,15 @@ import qualified Data.Text.IO as T
 
 type Client = (Int, WS.Connection)
 
-type TOPRunner = (Tree TOP -> IO ())
+type TOPRunner = ((Tree TOP, Tree CHOP) -> IO ())
 data ServerState =
   ServerState { _clients :: [Client]
               , _tdState :: TDState
               , _runner :: TOPRunner
               }
 
-data Message = Connecting | RegisterVote Int | NextVote
+data Message = Connecting | RegisterVote Int | NextVote | Reset
+  -- Triger(movie,lux,etc), GotoTime,
 
 data OutputState = Tree TOP
 
@@ -57,6 +58,7 @@ instance FromJSON Message where
       "connecting" -> return Connecting
       "vote" -> RegisterVote <$> o .: "index"
       "nextVote" -> return NextVote
+      "reset" -> return Reset
       _ -> fail ("Unknown type " ++ ty)
 
 data OutMsg = Votes [String]
@@ -70,6 +72,7 @@ data TDState = TDState { _tallies :: [Int]
                        , _voteTimer :: Maybe Int
                        , _movieDecks :: (BS.ByteString, BS.ByteString)
                        , _movieDeckIndex :: DeckIndex
+                       , _effects :: [Int]
                        } deriving Show
 
 data DeckIndex = Left | Right deriving (Show, Eq)
@@ -78,6 +81,9 @@ data Vote = MovieVote { _fileId :: Int
                       }
           | FunVote { _funId :: Int
                     }
+          | EffectVote { _effectId :: Int
+                       }
+
 
 data TimerState = Start | Stop
 type Timer = (TVar TimerState, TMVar ())
@@ -88,34 +94,43 @@ makeLenses ''ServerState
 
 voteList = [ [MovieVote 0, MovieVote 1, MovieVote 2]
            , [MovieVote 2, MovieVote 0, MovieVote 1]
+           , [EffectVote 1, EffectVote 0]
            , [FunVote 0, FunVote 1, FunVote 2, FunVote 3]
            , [MovieVote 1, MovieVote 2, MovieVote 0]
+           , [EffectVote 0, EffectVote 1]
            , [FunVote 0, FunVote 1, FunVote 2, FunVote 3]
            , [MovieVote 0, MovieVote 2, MovieVote 1]
            ]
 
-movies = M.fromList [ (0, ("Holme/hlme000a.mp4", "Basic"))
-                    , (1, ("Holme/hlme000ac.mp4", "Artistic Significance, Airdancer"))
-                    , (2, ("Holme/hlme000d.mp4", "Airdancer"))
+movies = M.fromList [ (0, ("Holme/hlme000a_hap.mov", "Basic"))
+                    , (1, ("Holme/hlme000ac_hap.mov", "Artistic Significance, Airdancer"))
+                    , (2, ("Holme/hlme000d_hap.mov", "Airdancer"))
                     ]
 
-funBreak = M.fromList[ (0, "TSC")
-                     , (1, "Dance Party")
-                     , (2, "Magic show")
-                     , (3, "Snacks")
-                     ]
+funBreak = M.fromList [ (0, "TSC")
+                      , (1, "Dance Party")
+                      , (2, "Magic show")
+                      , (3, "Snacks")
+                      ]
+
+effectList = M.fromList [ (0, ("Black & White", glslTP' id "scripts/bandw.glsl" [] . (:[])))
+                        , (1, ("VHS", glslTP' id "scripts/vhs.glsl" [("i_time", emptyV4 & _1 ?~ seconds)] . (:[])))
+                        ]
 
 voteText :: Vote -> BS.ByteString
 voteText (MovieVote i) = movies ! i ^. _2
 voteText (FunVote i) = funBreak ! i
+voteText (EffectVote i) = effectList ! i ^. _1
 
 -- Run
 
 go = do
-  r <- topRunner
-  let newState = newServerState r
+  state <- newIORef mempty
+  let
+    runner = \(t, c) -> run2 state [t] [c]
+    newState = newServerState runner
   state <- newMVar newState
-  r $ renderTDState $ newState ^. tdState
+  runner $ renderTDState $ newState ^. tdState
   serve state
 
 loop :: TVar Int -> IO ()
@@ -128,21 +143,25 @@ loop count = do
   atomically $ modifyTVar count (+1)
   loop count
 
-renderTDState :: TDState -> Tree TOP
-renderTDState (TDState {_currentVote, _tallies, _lastVoteWinner, _voteTimer, _movieDecks, _movieDeckIndex}) =
-  compT 0
+renderTDState :: TDState -> (Tree TOP, Tree CHOP)
+renderTDState (TDState {_currentVote, _tallies, _lastVoteWinner, _voteTimer, _movieDecks, _movieDeckIndex, _effects}) =
+  (outT $ compT 0
   $ zipWith renderVote [0..] _tallies
   ++ maybeToList (resText . (++) "Last vote: " . BS.unpack . voteText <$> (_lastVoteWinner >>= \i -> voteList ^? ((ix ((_currentVote - 1) `mod` length voteList))) . (ix i)))
   ++ maybeToList (fmap (resTexts . caststr . LD.floor)
                   $ (!*) . msToF
                   <*> ((!+) (float 1) . (!*) (float (-1))) . chopChanName "timer_fraction" . (timerS' (timerStart .~ True)) . msToF
                   <$> _voteTimer)
-  ++ [switchT' (switchTBlend ?~ bool True)
+  ++ [(switchT' (switchTBlend ?~ bool True)
       (chopChan0 . lag (float 0.3) (float 0.3) . constC . (:[]) . B.bool (float 0) (float 1) . ((==) Right) $ _movieDeckIndex)
-      [ mv $ fst _movieDecks
-      , mv $ snd _movieDecks
-      ]
-     ]
+      [ (mv $ fst _movieDecks)
+      , (mv $ snd _movieDecks)
+      ]) & (foldl (.) id $ ((\i -> snd $ (effectList ! i)) <$> _effects))
+     ], (switchC
+      (casti . chopChan0 . constC . (:[]) . B.bool (float 0) (float 1) . ((==) Right) $ _movieDeckIndex)
+      [ audioMovie (mv $ fst _movieDecks)
+      , audioMovie (mv $ snd _movieDecks)
+      ]) & audioDevOut' (audioDevOutVolume ?~ float 0))
   where
     renderVote optionidx tally =
       (resText .  (flip (++) $ show tally) . BS.unpack . voteText $ currentVotes !! optionidx)
@@ -165,7 +184,11 @@ modifyTDState f state = do
 -- Server
 
 newServerState :: TOPRunner -> ServerState
-newServerState = ServerState [] (TDState [0, 0, 0] 0 Nothing Nothing (movies ! 0 ^. _1, "") Right)
+newServerState = ServerState [] newTDState
+
+newTDState :: TDState
+newTDState = TDState [] 0 Nothing Nothing (movies ! 0 ^. _1, movies ! 0 ^. _1) Right []
+
 
 serve :: MVar ServerState -> IO ()
 serve state = do
@@ -195,8 +218,8 @@ receive conn state (id, _) = do
     msg <- WS.receiveData conn
     traceShowM msg
     case decode msg of
-      (Just (RegisterVote i)) -> do
-        modifyTDState (updateVote i) state
+      (Just (RegisterVote i)) -> modifyTDState (updateVote i) state
+      (Just Reset) -> modifyTDState (const newTDState) state
       (Just NextVote) -> do
         let voteLength = 4000
         timer <- newTimer voteLength
@@ -205,7 +228,8 @@ receive conn state (id, _) = do
           modifyTDState endVote state
         modifyTDState (nextVote voteLength) state
 
-      _ -> putStrLn "Unrecognized message"
+      (Just Connecting) -> putStrLn "Connecting twice?"
+      Nothing -> putStrLn "Unrecognized message"
   wait thr
 
 broadcast :: OutMsg -> [Client] -> IO ()
@@ -249,6 +273,7 @@ applyVote (MovieVote id) td =
       (movieDeckIndex %~ B.bool Left Right . ((==) Left))
 
 applyVote (FunVote _) td = td
+applyVote (EffectVote id) td = td & effects %~ (id:)
 
 
 -- Timer

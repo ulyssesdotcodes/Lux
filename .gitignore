@@ -18,7 +18,10 @@ cabal.sandbox.config
 .stack-work/
 cabal.project.local
 .HTF/
+
+# Movies
 *.mp4
+*.mov
 
 # elm-package generated files
 elm-stuff

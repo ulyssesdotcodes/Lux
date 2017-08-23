@@ -24,7 +24,7 @@ type alias Model =
   , votes : List String
   }
 
-type OutgoingMsg = Connecting | Vote Int | NextVote
+type OutgoingMsg = Connecting | Vote Int | NextVote | Reset
 type IncomingMsg = Votes (List String)
 
 init : (Model, Cmd Msg)
@@ -38,6 +38,7 @@ encodeOutMsg msg =
       Connecting -> Json.Encode.object [("type", Json.Encode.string "connecting")]
       Vote i -> Json.Encode.object [("type", Json.Encode.string "vote"), ("index", Json.Encode.int i)]
       NextVote -> Json.Encode.object [("type", Json.Encode.string "nextVote")]
+      Reset -> Json.Encode.object [("type", Json.Encode.string "reset")]
 
 decodeInMsg : String -> Result String IncomingMsg
 decodeInMsg msg =
@@ -82,6 +83,7 @@ view : Model -> Html Msg
 view model =
   div [] <|
     [ div [] (List.map viewMessage model.messages)
+    , button [onClick (Send <| encodeOutMsg Reset)] [text "Reset"]
     , button [onClick (Send <| encodeOutMsg NextVote)] [text "Next Vote"]
     ] ++ indexedMap (\i t -> button [onClick (Send <| encodeOutMsg <| Vote i)] [text t]) model.votes
 

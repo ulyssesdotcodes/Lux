@@ -27,8 +27,11 @@ classes = {
   'videoDeviceIn' : (videodeviceinTOP, 'videodevin', 'TOP'),
 
   'analyze' : (analyzeCHOP, 'analyze', 'CHOP'),
-  'audioIn' : (audiodeviceinCHOP, 'audiodevin', 'CHOP'),
+  'audioDevOut' : (audiodeviceoutCHOP, 'audiodevout', 'CHOP'),
+  'audioFileIn' : (audiofileinCHOP, 'audiofilein', 'CHOP'),
   'audioFilter' : (audiofilterCHOP, 'audiofilter', 'CHOP'),
+  'audioIn' : (audiodeviceinCHOP, 'audiodevin', 'CHOP'),
+  'audioMovie' : (audiomovieCHOP, 'audiomovie', 'CHOP'),
   'audioSpectrum' : (audiospectrumCHOP, 'audiospect', 'CHOP'),
   'constantChop' : (constantCHOP, 'constant', 'CHOP'),
   'count' : (countCHOP, 'count', 'CHOP'),
