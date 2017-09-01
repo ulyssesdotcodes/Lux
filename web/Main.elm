@@ -24,8 +24,15 @@ type alias Model =
   , votes : List String
   }
 
-type OutgoingMsg = Connecting | Vote Int | NextVote | Reset
+type OutgoingMsg = Connecting | Vote Int | NextVote VoteType (List Int) | Reset
 type IncomingMsg = Votes (List String)
+type VoteType = Show | Film
+
+voteType : VoteType -> String
+voteType vt =
+  case vt of
+    Show -> "Show"
+    Film -> "Film"
 
 init : (Model, Cmd Msg)
 init =
@@ -37,7 +44,7 @@ encodeOutMsg msg =
     case msg of
       Connecting -> Json.Encode.object [("type", Json.Encode.string "connecting")]
       Vote i -> Json.Encode.object [("type", Json.Encode.string "vote"), ("index", Json.Encode.int i)]
-      NextVote -> Json.Encode.object [("type", Json.Encode.string "nextVote")]
+      NextVote ty is-> Json.Encode.object [("type", Json.Encode.string <| "do" ++ voteType ty ++ "Vote"), ("votes", Json.Encode.list <| List.map Json.Encode.int is)]
       Reset -> Json.Encode.object [("type", Json.Encode.string "reset")]
 
 decodeInMsg : String -> Result String IncomingMsg
@@ -84,7 +91,10 @@ view model =
   div [] <|
     [ div [] (List.map viewMessage model.messages)
     , button [onClick (Send <| encodeOutMsg Reset)] [text "Reset"]
-    , button [onClick (Send <| encodeOutMsg NextVote)] [text "Next Vote"]
+    , button [onClick (Send <| encodeOutMsg <| NextVote Show [0, 1, 2] )] [text "Show Vote 1"]
+    , button [onClick (Send <| encodeOutMsg <| NextVote Film [0, 1, 2] )] [text "Film Vote 1"]
+    , button [onClick (Send <| encodeOutMsg <| NextVote Show [2, 1, 0] )] [text "Show Vote 2"]
+    , button [onClick (Send <| encodeOutMsg <| NextVote Film [1, 4, 3] )] [text "Film Vote 2"]
     ] ++ indexedMap (\i t -> button [onClick (Send <| encodeOutMsg <| Vote i)] [text t]) model.votes
 
 

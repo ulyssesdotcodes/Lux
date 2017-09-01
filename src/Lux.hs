@@ -4,12 +4,17 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE FlexibleInstances #-}
+
 
 module Lux where
 
 import Debug.Trace
 
-import Prelude hiding (Right, Left)
+import Prelude hiding (Right, Left, lookup)
 
 import LambdaDesigner.Op as LD
 import LambdaDesigner.Lib as LD
@@ -25,11 +30,11 @@ import Control.Monad.State.Lazy hiding (fix)
 import Data.Aeson as A
 import qualified Data.Bool as B
 import Data.IORef
-import Data.List
-import Data.Map.Strict as M (fromList, (!))
+import Data.List hiding (lookup)
+import Data.Map.Strict as M (Map, fromList, (!), lookup)
 import Data.Matrix (fromList)
 import Data.Maybe
-import Data.Text (Text)
+import Data.Text (Text, unpack)
 import qualified Network.WebSockets as WS
 
 
@@ -46,7 +51,7 @@ data ServerState =
               , _runner :: TOPRunner
               }
 
-data Message = Connecting | RegisterVote Int | NextVote | Reset
+data Message = Connecting | RegisterVote Int | DoShowVote [Int] | DoFilmVote [Int] | Reset
   -- Triger(movie,lux,etc), GotoTime,
 
 data OutputState = Tree TOP
@@ -57,70 +62,114 @@ instance FromJSON Message where
     case ty of
       "connecting" -> return Connecting
       "vote" -> RegisterVote <$> o .: "index"
-      "nextVote" -> return NextVote
+      "doShowVote" -> DoShowVote <$> o .: "votes"
+      "doFilmVote" -> DoFilmVote <$> o .: "votes"
       "reset" -> return Reset
       _ -> fail ("Unknown type " ++ ty)
 
-data OutMsg = Votes [String]
+data OutMsg = VotesMsg [Text]
 
 instance ToJSON OutMsg where
-  toJSON (Votes ns) = object ["type" A..= "vote", "votes" A..= ns]
+  toJSON (VotesMsg vs) = object ["type" A..= "vote", "votes" A..= vs]
 
-data TDState = TDState { _tallies :: [Int]
-                       , _currentVote :: Int
-                       , _lastVoteWinner :: Maybe Int
+type Effect = Tree TOP -> Tree TOP
+
+data TDState = TDState { _activeVotes :: ActiveVotes
+                       , _filmVotePool :: Map Int FilmVote
+                       , _lastVoteWinner :: Maybe VoteText
                        , _voteTimer :: Maybe Int
                        , _movieDecks :: (BS.ByteString, BS.ByteString)
                        , _movieDeckIndex :: DeckIndex
-                       , _effects :: [Int]
-                       } deriving Show
+                       , _effects :: [ Effect ]
+                       }
 
 data DeckIndex = Left | Right deriving (Show, Eq)
 
-data Vote = MovieVote { _fileId :: Int
-                      }
-          | FunVote { _funId :: Int
-                    }
-          | EffectVote { _effectId :: Int
-                       }
+type CrypticName = Text
+type DecrypticName = Text
+newtype VoteText = VoteText { voteNames :: (CrypticName, DecrypticName) }
 
+class Vote a where
+  run :: a -> TDState -> TDState
+  voteText :: a -> VoteText
+
+data ShowVote = ShowVote VoteText
+
+instance Vote ShowVote where
+  run = id . flip const
+  voteText (ShowVote vt) = vt
+
+data FilmVote = FilmVote VoteText FilmData
+
+data FilmData = Movie BS.ByteString
+              | Effect (Tree TOP -> Tree TOP)
+
+data ActiveVotes = ShowVotes [ (ShowVote, Int) ]
+                 | FilmVotes [ (FilmVote, Int) ]
+                 | NoVotes
+
+activeVoteTexts :: ActiveVotes -> [ VoteText ]
+activeVoteTexts (ShowVotes vs) = voteText . fst <$> vs
+activeVoteTexts (FilmVotes vs) = voteText . fst <$> vs
+activeVoteTexts NoVotes = []
+
+
+makeLenses ''TDState
+makeLenses ''ServerState
+
+instance Vote FilmVote where
+  run (FilmVote _ (Movie file)) td =
+    let
+      accessor = if (td ^. movieDeckIndex) == Right then _1 else _2
+    in
+      td &
+        (movieDecks . accessor .~ file) .
+        (movieDeckIndex %~ B.bool Left Right . ((==) Left))
+  run (FilmVote _ (Effect eff)) td = td & effects %~ (eff:)
+  voteText (FilmVote vt _) = vt
+
+-- Vote is a 
+
+-- Every vote: announcement that vote is up, voting update w/ countdown, 10 sec announcement, vote locked - loading vote audio, vote 
+-- data VoteType =
+--   ShowVote -- [nothing, extra audio file, screen c video] votes are always the same 3 in the same order
+--   | FilmVote -- switch video files, adding effect, swap out of video audio (doesn't have to be sunken, but check if it can do it easily (timeline to timeline of show?)), 3 channels of audio (primary (can be switched to xyz), soundtrack, director comentary)
+
+-- Will be pulling from different pool for each vote and removing from master if it's selected
+-- Votes each have: question, cryptic selection, decrypted text
+-- Second movie file on screen A w/ alpha
+-- See which vote for show control
+-- Kitchen scene (and in memorium) overrides everything - just make TD show kitchen scene then go back to regular
+-- Paper plane cue
+-- Show control UI shows Vote 1, Vote 2, Vote 3, Vote 4
+-- Color votes randomly after show vote 4 (decide on prearranged or random) but film vote right after show vote 4 is blue, green, red
+-- Ending is [BS.ByteString] of films and the runner will click "next clip" when appropriate
+
+-- newType Vote (a :: VoteType) b = Vote Int
 
 data TimerState = Start | Stop
 type Timer = (TVar TimerState, TMVar ())
 
-makeLenses ''TDState
-makeLenses ''Vote
-makeLenses ''ServerState
+newServerState :: TOPRunner -> ServerState
+newServerState = ServerState [] newTDState
 
-voteList = [ [MovieVote 0, MovieVote 1, MovieVote 2]
-           , [MovieVote 2, MovieVote 0, MovieVote 1]
-           , [EffectVote 1, EffectVote 0]
-           , [FunVote 0, FunVote 1, FunVote 2, FunVote 3]
-           , [MovieVote 1, MovieVote 2, MovieVote 0]
-           , [EffectVote 0, EffectVote 1]
-           , [FunVote 0, FunVote 1, FunVote 2, FunVote 3]
-           , [MovieVote 0, MovieVote 2, MovieVote 1]
-           ]
+newTDState :: TDState
+newTDState = TDState NoVotes filmVotes Nothing Nothing ("", "") Right []
 
-movies = M.fromList [ (0, ("Holme/hlme000a_hap.mov", "Basic"))
-                    , (1, ("Holme/hlme000ac_hap.mov", "Artistic Significance, Airdancer"))
-                    , (2, ("Holme/hlme000d_hap.mov", "Airdancer"))
-                    ]
-
-funBreak = M.fromList [ (0, "TSC")
-                      , (1, "Dance Party")
-                      , (2, "Magic show")
-                      , (3, "Snacks")
+filmVotes :: Map Int FilmVote
+filmVotes = M.fromList [ (0, FilmVote (VoteText ("Basic", "B")) (Movie "Holme/hlme000a_hap.mov"))
+                      , (1, FilmVote (VoteText ("Artistic Significance, Airdancer", "ASA")) (Movie "Holme/hlme000ac_hap.mov"))
+                      , (2, FilmVote (VoteText ("Airdancer", "A")) (Movie "Holme/hlme000d_hap.mov"))
+                      , (3, FilmVote (VoteText ("Black & White", "B&W")) (Effect $ glslTP' id "scripts/bandw.glsl" [] . (:[])))
+                      , (4, FilmVote (VoteText ("VHS", "V")) (Effect $ glslTP' id "scripts/vhs.glsl" [("i_time", emptyV4 & _1 ?~ seconds)] . (:[])))
                       ]
 
-effectList = M.fromList [ (0, ("Black & White", glslTP' id "scripts/bandw.glsl" [] . (:[])))
-                        , (1, ("VHS", glslTP' id "scripts/vhs.glsl" [("i_time", emptyV4 & _1 ?~ seconds)] . (:[])))
-                        ]
 
-voteText :: Vote -> BS.ByteString
-voteText (MovieVote i) = movies ! i ^. _2
-voteText (FunVote i) = funBreak ! i
-voteText (EffectVote i) = effectList ! i ^. _1
+showVotes :: Map Int ShowVote
+showVotes = M.fromList [ (0, ShowVote $ VoteText ("Basic", "B"))
+                       , (1, ShowVote $ VoteText ("Test", "T"))
+                       , (2, ShowVote $ VoteText ("Hi", "H"))
+                       ]
 
 -- Run
 
@@ -144,10 +193,10 @@ loop count = do
   loop count
 
 renderTDState :: TDState -> (Tree TOP, Tree CHOP)
-renderTDState (TDState {_currentVote, _tallies, _lastVoteWinner, _voteTimer, _movieDecks, _movieDeckIndex, _effects}) =
+renderTDState (TDState {_activeVotes, _lastVoteWinner, _voteTimer, _movieDecks, _movieDeckIndex, _effects}) =
   (outT $ compT 0
-  $ zipWith renderVote [0..] _tallies
-  ++ maybeToList (resText . (++) "Last vote: " . BS.unpack . voteText <$> (_lastVoteWinner >>= \i -> voteList ^? ((ix ((_currentVote - 1) `mod` length voteList))) . (ix i)))
+  $ zipWith renderVote [0..] votes
+  ++ maybeToList (resText . (++) "Last vote: " . unpack . snd . voteNames <$> _lastVoteWinner)
   ++ maybeToList (fmap (resTexts . caststr . LD.floor)
                   $ (!*) . msToF
                   <*> ((!+) (float 1) . (!*) (float (-1))) . chopChanName "timer_fraction" . (timerS' (timerStart .~ True)) . msToF
@@ -156,19 +205,23 @@ renderTDState (TDState {_currentVote, _tallies, _lastVoteWinner, _voteTimer, _mo
       (chopChan0 . lag (float 0.3) (float 0.3) . constC . (:[]) . B.bool (float 0) (float 1) . ((==) Right) $ _movieDeckIndex)
       [ (mv $ fst _movieDecks)
       , (mv $ snd _movieDecks)
-      ]) & (foldl (.) id $ ((\i -> snd $ (effectList ! i)) <$> _effects))
+      ]) & (foldl (.) id _effects)
      ], (switchC
       (casti . chopChan0 . constC . (:[]) . B.bool (float 0) (float 1) . ((==) Right) $ _movieDeckIndex)
       [ audioMovie (mv $ fst _movieDecks)
       , audioMovie (mv $ snd _movieDecks)
       ]) & audioDevOut' (audioDevOutVolume ?~ float 0))
   where
-    renderVote optionidx tally =
-      (resText .  (flip (++) $ show tally) . BS.unpack . voteText $ currentVotes !! optionidx)
-      & transformT' (transformTranslate .~ (Nothing, Just . float $ (1 - 0.33 * (fromIntegral $ optionidx) - 0.66)))
-    currentVotes = voteList !! _currentVote
+    renderVote idx (voteName, tally) =
+      (resText .  (flip (++) $ show tally) . unpack $ voteName)
+      & transformT' (transformTranslate .~ (Nothing, Just . float $ (1 - 0.33 * (fromIntegral $ idx) - 0.66)))
     msToF = float . (flip (/) 1000.0) . fromIntegral
     mv = movieFileIn' (moviePlayMode ?~ int 0) . str. BS.unpack
+    votes =
+      case _activeVotes of
+        (ShowVotes vs) -> vs & traverse . _1 %~ (fst . voteNames . voteText)
+        (FilmVotes vs) -> vs & traverse . _1 %~ (fst . voteNames . voteText)
+        NoVotes -> []
 
 resText = resTexts . str
 resTexts = textT' (topResolution .~ iv2 (1920, 1080))
@@ -177,18 +230,10 @@ modifyTDState :: (TDState -> TDState) -> MVar ServerState -> IO ()
 modifyTDState f state = do
   s <- modifyMVar state $ (\s -> return (s, s)) . (tdState %~ f)
   s ^. runner $ renderTDState $ s ^. tdState
-  traceShowM (s ^. tdState)
   let tdVal g = s ^. tdState . g
-  broadcast (Votes $ fmap (BS.unpack . voteText) $ take (length $ tdVal tallies) . ((!!) voteList) $ (tdVal currentVote)) $ s ^. clients
+  broadcast (VotesMsg . fmap (fst . voteNames) . activeVoteTexts $ tdVal activeVotes) $ s ^. clients
 
 -- Server
-
-newServerState :: TOPRunner -> ServerState
-newServerState = ServerState [] newTDState
-
-newTDState :: TDState
-newTDState = TDState [] 0 Nothing Nothing (movies ! 0 ^. _1, movies ! 0 ^. _1) Right []
-
 
 serve :: MVar ServerState -> IO ()
 serve state = do
@@ -220,17 +265,19 @@ receive conn state (id, _) = do
     case decode msg of
       (Just (RegisterVote i)) -> modifyTDState (updateVote i) state
       (Just Reset) -> modifyTDState (const newTDState) state
-      (Just NextVote) -> do
+      (Just (DoFilmVote vs)) -> startTimer (nextShowVote vs)
+      (Just (DoShowVote vs)) -> startTimer (nextFilmVote vs)
+      (Just Connecting) -> putStrLn "Connecting twice?"
+      Nothing -> putStrLn "Unrecognized message"
+  wait thr
+  where
+    startTimer nextVote = do
         let voteLength = 4000
         timer <- newTimer voteLength
         __ <- forkIO $ do
           waitTimer timer
           modifyTDState endVote state
-        modifyTDState (nextVote voteLength) state
-
-      (Just Connecting) -> putStrLn "Connecting twice?"
-      Nothing -> putStrLn "Unrecognized message"
-  wait thr
+        modifyTDState nextVote state
 
 broadcast :: OutMsg -> [Client] -> IO ()
 broadcast msg cs = do
@@ -239,41 +286,49 @@ broadcast msg cs = do
 -- Votes
 
 updateVote :: Int -> TDState -> TDState
-updateVote id = tallies . ix id %~ (+ 1)
+updateVote i td@(TDState { _activeVotes = ShowVotes vs })= td & activeVotes .~ ShowVotes (vs & ix i . _2 %~ (+ 1))
+updateVote i td@(TDState { _activeVotes = FilmVotes vs })= td & activeVotes .~ FilmVotes (vs & ix i . _2 %~ (+ 1))
+updateVote i td@(TDState { _activeVotes = NoVotes })= td
 
-nextVote :: Int -> TDState -> TDState
-nextVote timer td@(TDState { _currentVote, _tallies, _lastVoteWinner }) =
-  let
-    votes = (!!) voteList
-  in
-    td &
-      (tallies .~ take (length $ votes _currentVote) (repeat 0)) .
-      (voteTimer ?~ timer)
+nextShowVote :: [ Int ] -> TDState -> TDState
+nextShowVote ids = set activeVotes (FilmVotes . catMaybes $ fmap (, 0) . flip lookup filmVotes <$> ids)
+
+nextFilmVote :: [ Int ] -> TDState -> TDState
+nextFilmVote ids = set activeVotes (ShowVotes . catMaybes $ fmap (, 0)  . flip lookup showVotes <$> ids)
+
+lookups :: Ord k => Map k v -> [k] -> [v]
+lookups m = catMaybes . fmap (flip lookup m)
 
 endVote :: TDState -> TDState
-endVote td@(TDState { _tallies, _currentVote })=
-  let
-    maxIdx = fromJust . listToMaybe . map fst . reverse . sortOn snd . zip [0..] $ _tallies
-    currentVotes = voteList !! _currentVote
-  in
-    td & ((currentVote %~ flip mod (length voteList) . (+ 1)) .
-          (tallies .~ []) .
-          (voteTimer .~ Nothing) .
-          (lastVoteWinner ?~ maxIdx) .
-          (applyVote $ currentVotes !! maxIdx)
-         )
+endVote td@(TDState { _activeVotes = ShowVotes vs }) = td & (activeVotes .~ NoVotes) . (lastVoteWinner ?~ (voteText . maxVote $ vs))
+endVote td@(TDState { _activeVotes = FilmVotes vs }) = td & (activeVotes .~ NoVotes) . (lastVoteWinner ?~ (voteText maxVote')) . (runFilmVote maxVote')
+  where maxVote' = maxVote vs
+endVote td@(TDState { _activeVotes = NoVotes }) = td
 
-applyVote :: Vote -> TDState -> TDState
-applyVote (MovieVote id) td =
+maxVote :: [(a, Int)] -> a
+maxVote = fst . maximumBy (flip (flip compare . snd) . snd)
+
+  -- let
+  --   maxIdx = fromJust . listToMaybe . map fst . reverse . sortOn snd . zip [0..] $ _tallies
+  --   currentVotes = voteList !! _currentVote
+  -- in
+  --   td & ((currentVote %~ flip mod (length voteList) . (+ 1)) .
+  --         (tallies .~ []) .
+  --         (voteTimer .~ Nothing) .
+  --         (lastVoteWinner ?~ maxIdx) .
+  --         (applyVote $ currentVotes !! maxIdx)
+  --        )
+
+runFilmVote :: FilmVote -> TDState -> TDState
+runFilmVote (FilmVote _ (Movie m)) td =
   let
     accessor = if (td ^. movieDeckIndex) == Right then _1 else _2
   in
     td &
-      (movieDecks . accessor .~ (movies ^. ((ix id) . _1))) .
+      (movieDecks . accessor .~ m) .
       (movieDeckIndex %~ B.bool Left Right . ((==) Left))
 
-applyVote (FunVote _) td = td
-applyVote (EffectVote id) td = td & effects %~ (id:)
+runFilmVote (FilmVote _ (Effect e)) td = td & effects %~ (e:)
 
 
 -- Timer
