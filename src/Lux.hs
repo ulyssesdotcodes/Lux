@@ -14,7 +14,7 @@ module Lux where
 
 import Debug.Trace
 
-import Prelude hiding (Right, Left, lookup)
+import Prelude hiding (Right, Left, lookup, delete)
 
 import LambdaDesigner.Op as LD
 import LambdaDesigner.Lib as LD
@@ -31,7 +31,7 @@ import Data.Aeson as A
 import qualified Data.Bool as B
 import Data.IORef
 import Data.List hiding (lookup)
-import Data.Map.Strict as M (Map, fromList, (!), lookup)
+import Data.Map.Strict as M (Map, fromList, (!), lookup, member, delete)
 import Data.Matrix (fromList)
 import Data.Maybe
 import Data.Text (Text, unpack)
@@ -105,13 +105,8 @@ data FilmData = Movie BS.ByteString
               | Effect (Tree TOP -> Tree TOP)
 
 data ActiveVotes = ShowVotes [ (ShowVote, Int) ]
-                 | FilmVotes [ (FilmVote, Int) ]
+                 | FilmVotes [ (Int, Int) ]
                  | NoVotes
-
-activeVoteTexts :: ActiveVotes -> [ VoteText ]
-activeVoteTexts (ShowVotes vs) = voteText . fst <$> vs
-activeVoteTexts (FilmVotes vs) = voteText . fst <$> vs
-activeVoteTexts NoVotes = []
 
 
 makeLenses ''TDState
@@ -149,6 +144,11 @@ instance Vote FilmVote where
 
 data TimerState = Start | Stop
 type Timer = (TVar TimerState, TMVar ())
+
+activeVoteTexts :: ActiveVotes -> [ VoteText ]
+activeVoteTexts (ShowVotes vs) = voteText . fst <$> vs
+activeVoteTexts (FilmVotes vs) = catMaybes $ fmap voteText . flip lookup filmVotes .  fst <$> vs
+activeVoteTexts NoVotes = []
 
 newServerState :: TOPRunner -> ServerState
 newServerState = ServerState [] newTDState
@@ -220,7 +220,7 @@ renderTDState (TDState {_activeVotes, _lastVoteWinner, _voteTimer, _movieDecks, 
     votes =
       case _activeVotes of
         (ShowVotes vs) -> vs & traverse . _1 %~ (fst . voteNames . voteText)
-        (FilmVotes vs) -> vs & traverse . _1 %~ (fst . voteNames . voteText)
+        (FilmVotes vs) -> vs & traverse . _1 %~ (fst . voteNames . voteText . (!) filmVotes)
         NoVotes -> []
 
 resText = resTexts . str
@@ -265,8 +265,8 @@ receive conn state (id, _) = do
     case decode msg of
       (Just (RegisterVote i)) -> modifyTDState (updateVote i) state
       (Just Reset) -> modifyTDState (const newTDState) state
-      (Just (DoFilmVote vs)) -> startTimer (nextShowVote vs)
-      (Just (DoShowVote vs)) -> startTimer (nextFilmVote vs)
+      (Just (DoFilmVote vs)) -> startTimer (nextFilmVote vs)
+      (Just (DoShowVote vs)) -> startTimer (nextShowVote vs)
       (Just Connecting) -> putStrLn "Connecting twice?"
       Nothing -> putStrLn "Unrecognized message"
   wait thr
@@ -290,19 +290,29 @@ updateVote i td@(TDState { _activeVotes = ShowVotes vs })= td & activeVotes .~ S
 updateVote i td@(TDState { _activeVotes = FilmVotes vs })= td & activeVotes .~ FilmVotes (vs & ix i . _2 %~ (+ 1))
 updateVote i td@(TDState { _activeVotes = NoVotes })= td
 
-nextShowVote :: [ Int ] -> TDState -> TDState
-nextShowVote ids = set activeVotes (FilmVotes . catMaybes $ fmap (, 0) . flip lookup filmVotes <$> ids)
-
 nextFilmVote :: [ Int ] -> TDState -> TDState
-nextFilmVote ids = set activeVotes (ShowVotes . catMaybes $ fmap (, 0)  . flip lookup showVotes <$> ids)
+nextFilmVote [] td = set activeVotes NoVotes td
+nextFilmVote ids td = set activeVotes (FilmVotes $ (, 0) <$> filter (flip member (td ^. filmVotePool)) ids) td
+
+nextShowVote :: [ Int ] -> TDState -> TDState
+nextShowVote [] = set activeVotes NoVotes
+nextShowVote ids = set activeVotes (ShowVotes . catMaybes $ fmap (, 0)  . flip lookup showVotes <$> ids)
 
 lookups :: Ord k => Map k v -> [k] -> [v]
 lookups m = catMaybes . fmap (flip lookup m)
 
 endVote :: TDState -> TDState
 endVote td@(TDState { _activeVotes = ShowVotes vs }) = td & (activeVotes .~ NoVotes) . (lastVoteWinner ?~ (voteText . maxVote $ vs))
-endVote td@(TDState { _activeVotes = FilmVotes vs }) = td & (activeVotes .~ NoVotes) . (lastVoteWinner ?~ (voteText maxVote')) . (runFilmVote maxVote')
-  where maxVote' = maxVote vs
+endVote td@(TDState { _activeVotes = FilmVotes vs }) =
+  let
+    maxVote' = maxVote vs
+    maxVote'' = filmVotes ! maxVote'
+  in
+    td &
+      (activeVotes .~ NoVotes) .
+      (lastVoteWinner ?~ (voteText maxVote'')) .
+      (runFilmVote maxVote'') .
+      (filmVotePool %~ M.delete maxVote')
 endVote td@(TDState { _activeVotes = NoVotes }) = td
 
 maxVote :: [(a, Int)] -> a
