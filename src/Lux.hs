@@ -291,11 +291,16 @@ updateVote i td@(TDState { _activeVotes = FilmVotes vs })= td & activeVotes .~ F
 updateVote i td@(TDState { _activeVotes = NoVotes })= td
 
 nextFilmVote :: [ Int ] -> TDState -> TDState
-nextFilmVote [] td = set activeVotes NoVotes td
-nextFilmVote ids td = set activeVotes (FilmVotes $ (, 0) <$> filter (flip member (td ^. filmVotePool)) ids) td
+nextFilmVote ids td =
+  let
+    newVotes =
+      case filter (flip member (td ^. filmVotePool)) ids of
+        [] -> NoVotes
+        vs -> FilmVotes $ (, 0) <$> vs
+  in
+    set activeVotes newVotes td
 
 nextShowVote :: [ Int ] -> TDState -> TDState
-nextShowVote [] = set activeVotes NoVotes
 nextShowVote ids = set activeVotes (ShowVotes . catMaybes $ fmap (, 0)  . flip lookup showVotes <$> ids)
 
 lookups :: Ord k => Map k v -> [k] -> [v]
