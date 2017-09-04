@@ -36,6 +36,7 @@ import Data.Matrix (fromList)
 import Data.Maybe
 import Data.Text (Text, unpack)
 import qualified Network.WebSockets as WS
+import System.Random
 
 
 import qualified Data.ByteString.Char8 as BS
@@ -47,8 +48,8 @@ type Client = (Int, WS.Connection)
 type TOPRunner = ((Tree TOP, Tree CHOP) -> IO ())
 data ServerState =
   ServerState { _clients :: [Client]
-              , _tdState :: TDState
               , _runner :: TOPRunner
+              , _tdState :: TDState
               }
 
 data Message = Connecting | RegisterVote Int | DoShowVote [Int] | DoFilmVote [Int] | Reset
@@ -81,6 +82,7 @@ data TDState = TDState { _activeVotes :: ActiveVotes
                        , _movieDecks :: (BS.ByteString, BS.ByteString)
                        , _movieDeckIndex :: DeckIndex
                        , _effects :: [ Effect ]
+                       , _rlist :: [Float]
                        }
 
 data DeckIndex = Left | Right deriving (Show, Eq)
@@ -150,11 +152,11 @@ activeVoteTexts (ShowVotes vs) = voteText . fst <$> vs
 activeVoteTexts (FilmVotes vs) = catMaybes $ fmap voteText . flip lookup filmVotes .  fst <$> vs
 activeVoteTexts NoVotes = []
 
-newServerState :: TOPRunner -> ServerState
-newServerState = ServerState [] newTDState
+newServerState :: TOPRunner -> IO ServerState
+newServerState tr = newTDState >>= pure . ServerState [] tr
 
-newTDState :: TDState
-newTDState = TDState NoVotes filmVotes Nothing Nothing ("", "") Right []
+newTDState :: IO TDState
+newTDState = getStdGen >>= pure . TDState NoVotes filmVotes Nothing Nothing ("", "") Right [] . randoms
 
 filmVotes :: Map Int FilmVote
 filmVotes = M.fromList [ (0, FilmVote (VoteText ("Basic", "B")) (Movie "Holme/hlme000a_hap.mov"))
@@ -177,7 +179,7 @@ go = do
   state <- newIORef mempty
   let
     runner = \(t, c) -> run2 state [t] [c]
-    newState = newServerState runner
+  newState <- newServerState runner
   state <- newMVar newState
   runner $ renderTDState $ newState ^. tdState
   serve state
@@ -264,7 +266,7 @@ receive conn state (id, _) = do
     traceShowM msg
     case decode msg of
       (Just (RegisterVote i)) -> modifyTDState (updateVote i) state
-      (Just Reset) -> modifyTDState (const newTDState) state
+      (Just Reset) -> newTDState >>= flip modifyTDState state . const
       (Just (DoFilmVote vs)) -> startTimer (nextFilmVote vs)
       (Just (DoShowVote vs)) -> startTimer (nextShowVote vs)
       (Just Connecting) -> putStrLn "Connecting twice?"
@@ -293,12 +295,22 @@ updateVote i td@(TDState { _activeVotes = NoVotes })= td
 nextFilmVote :: [ Int ] -> TDState -> TDState
 nextFilmVote ids td =
   let
-    newVotes =
-      case filter (flip member (td ^. filmVotePool)) ids of
-        [] -> NoVotes
-        vs -> FilmVotes $ (, 0) <$> vs
+    (newVotes, newrs) =
+      case rvotes rlist' ((filter (flip member fvp)) ids) of
+        (_, [])  -> (NoVotes, td ^. rlist)
+        (rlist'', vs) -> (FilmVotes $ (,0) <$> vs, rlist'')
+    fvp = td ^. filmVotePool
+    rlist' = td ^. rlist
+    rvotes rs vs = (drop (length vs) rlist',) . take 3 . nub . catMaybes . snd $ mapAccumL (flip popAt) vs (zipWith rids (backsaw $ length vs) rs)
+    rids l r = Prelude.floor $ r * (fromIntegral l)
   in
-    set activeVotes newVotes td
+    td & (activeVotes .~ newVotes) . (rlist .~ newrs)
+
+backsaw :: Int -> [Int]
+backsaw n = [n - 1, n - 2 .. 0]
+
+popAt :: Show a => Int -> [a] -> ([a], Maybe a)
+popAt i as = foldr (\(i', a) (as, ma)  -> (if i == i' then (as, Just a) else (a:as, ma))) ([], Nothing) $ zip [0..] as
 
 nextShowVote :: [ Int ] -> TDState -> TDState
 nextShowVote ids = set activeVotes (ShowVotes . catMaybes $ fmap (, 0)  . flip lookup showVotes <$> ids)
@@ -322,17 +334,6 @@ endVote td@(TDState { _activeVotes = NoVotes }) = td
 
 maxVote :: [(a, Int)] -> a
 maxVote = fst . maximumBy (flip (flip compare . snd) . snd)
-
-  -- let
-  --   maxIdx = fromJust . listToMaybe . map fst . reverse . sortOn snd . zip [0..] $ _tallies
-  --   currentVotes = voteList !! _currentVote
-  -- in
-  --   td & ((currentVote %~ flip mod (length voteList) . (+ 1)) .
-  --         (tallies .~ []) .
-  --         (voteTimer .~ Nothing) .
-  --         (lastVoteWinner ?~ maxIdx) .
-  --         (applyVote $ currentVotes !! maxIdx)
-  --        )
 
 runFilmVote :: FilmVote -> TDState -> TDState
 runFilmVote (FilmVote _ (Movie m)) td =
@@ -366,193 +367,3 @@ newTimer n = do
                 Start -> putTMVar timer ()
                 Stop  -> return ()
     return (state, timer)
-
--- TD Handling
-
-
--- -- TDData
-
--- votesTable = voteToBS <$> [ VoteMovie "a" "A"
---                           , VoteMovie "b" "B"
---                           , VoteMovie "c" "C"
---                           , VoteMovie "d" "D"
---                           ]
-
--- votes = table $ fromLists votesList
--- votesList = [ ["a", "b", "c"]
---             , ["c", "b", "a"]
---             , ["b", "a", "c"]
---             ]
-
--- voteResultCache = fix "voteResults" $ table $ mempty
--- voteValueCache = fix "voteValues" $ table $ mempty
-
-
--- voteTimer = timerSeg' ((timerShowSeg ?~ bool True) . (timerCallbacks ?~
---                                                       fileD' (datVars .~ [ ("resultCache", Resolve voteResultCache)
---                                                                          , ("valueCache", Resolve voteValueCache)
---                                                                          , ("maxvote", Resolve maxVote)
---                                                                          , ("votesList", Resolve votes)
---                                                                          ]) "scripts/timer_callbacks.py")) . ((TimerSegment 0 0.1):)$ (\_ -> TimerSegment 0 8) <$> votesList
-
--- voteTick = casti (chopChanName "segment" voteTimer) !+ int (-1)
--- currentVotes = selectD' ((selectDRStartI ?~ casti voteTick) . (selectDREndI ?~ casti voteTick)) votes
--- voteNums = zipWith (\i c -> fix (BS.pack $ "voteNum" ++ show i) c) [0..] [constC [(float 0)], constC [(float 0)], constC [(float 0)]]
--- voteCount r v = count' ((countThresh ?~ (float 0.5)) . (countReset ?~ r) . (countResetCondition ?~ int 0)) v
--- voteEnabled = ceil $ chopChanName "timer_fraction" voteTimer
-
--- maxVote = fix "maxVote" $ cookC $ fan' ((fanOp .~ (Just $ int 1)) . (fanOffNeg ?~ bool False)) $
---             math' ((mathCombChops ?~ (int 4)) . (mathInt ?~ (int 2)))
---               [ mergeC $ voteCount (fix "resetVotes" $ constC [float 0]) <$> voteNums
---               , math' (mathCombChops ?~ (int 7)) $ voteCount (fix "resetVotes" $ constC [float 0]) <$> voteNums
---               ]
-
--- -- Screens
-
--- voteScreenRes = iv2 (1920, 1080)
-
--- voteScreen = compT 0 $ (lastVoteT & transformT' (transformTranslate._2 ?~ float 0.4)):((\i -> (transformT' ((transformTranslate .~ (emptyV2 & _2 ?~ float (0.33 - (fromIntegral i) * 0.33))))) . textT' (topResolution .~ voteScreenRes) $ (cell (int 0, int i) currentVotes)) <$> [0..2])
-
--- lastVote = cell (numRows voteValueCache !+ int (-1), int 0) voteValueCache
-
--- lastVoteT = textT' (topResolution .~ voteScreenRes) $ ternary (lastVote !== bstr "None") (str "") $ str "Last Vote: " !+ lastVote
-
-
-
--- --Server
-
--- server = fix "server"
---   (fileD' (datVars .~ [ ("website", Resolve website)
---                      , ("control", Resolve control)
---                      , ("timer", Resolve voteTimer)
---                      , ("resultCache", Resolve voteResultCache)
---                      , ("valueCache", Resolve voteValueCache)
---                      -- , ("movieTimer", Resolve movieTimer)
---                      -- , ("base", Resolve movieout)
---                      -- , ("outf", Resolve finalout)
---                      ] ++ zipWith (\i v -> (BS.pack $ "vote" ++ show i, Resolve v)) [0..] voteNums) "scripts/server.py")
---         & tcpipD' ((tcpipMode ?~ (int 1)) . (tcpipCallbackFormat ?~ (int 2)))
-
--- peers = fix "myPeers" $ textD ""
--- closepeer = fix "closePeer" $ textD "args[0].close()"
--- website = fileD "scripts/website.html"
--- control = fileD "scripts/control.html"
-
--- sendServer = datExec' (deTableChange ?~ "  if dat[0, 0]: mod.server.updateVotes(dat[0, 0].val, dat[0,1].val, dat[0,2].val)") currentVotes
-
-
-
-
-
-
-----------------------------------------------------
-
--- data VoteType = Movie | Effect deriving Eq
--- data VoteEffect = VoteEffect VoteType BS.ByteString BS.ByteString BS.ByteString deriving Eq
-
--- vtToBS Movie = "movie"
--- vtToBS Effect = "effect"
--- veToBS (VoteEffect (vtToBS -> ty) i1 i2 i3) = ty:[i1, i2, i3]
-
--- sidebyside = glslT' (topResolution .~ iv2 (1920 * 2, 1080)) "scripts/sidebyside.frag"
--- movieout = nullT $ switchT (chopChan0 $ invert [lastMovieInd]) [deckA, deckB]
--- finalout = outT $ sidebyside [movieout, voteview]
-
--- movieTimer = timer' id (int (60 * 60 * 3))
-
--- deck ind = movieFileIn' ((moviePlayMode ?~ int 1) .
---                       (movieIndex ?~ casti (chopChanName "timer_frames" movieTimer)) .
---                       (topResolution .~ iv2 (1920, 1080))) $
---   (cell ((casti $ floor $ chopChan0 ind) !% int (length moviesList), int 0) movies)
--- deckA = hold movieInd lastMovieInd & deck
--- deckB = hold movieInd (invert [lastMovieInd]) & deck
-
--- movieVote = selectD' (selectDRExpr ?~ PyExpr "re.match('movie',me.inputCell.val) != None") prevVote
--- movieInd' = constC . (:[]) $ castf $ cell ((int 0), casti (chopChan0 maxVote) !+ int 1) movieVote
--- movieInd = feedbackC (constC [float 0]) (\m -> hold (mergeC' (mergeCDupes ?~ int 1) [movieInd', m]) (invert $ [constC [voteEnabled]])) id
-
--- voteEnabled = ceil $ chopChanName "timer_fraction" voteTimer
-
-
--- lastMovieInd = logic' ((logicPreop ?~ (int 2)) . (logicConvert ?~ (int 3))) [movieInd]
-
--- moviesList = map (\i -> BS.concat ["C:\\Users\\ulyssesp\\Development\\Lux-TD\\3 min\\Anna - Copy (", BS.pack $ show i, ").mp4"]) [1..34]
---   ++
---   [ "C:\\Users\\ulyssesp\\Development\\Lux-TD\\3 min\\David.mp4"
---   , "C:\\Users\\ulyssesp\\Development\\Lux-TD\\3 min\\Helen.mp4"
---   ]
--- movies = table $ transpose $ fromLists [moviesList]
-
-
--- -- Votes
--- votesList = veToBS <$> [ VoteEffect Movie "0" "0" "0"
---                        , VoteEffect Effect "bandw" "vhs" "bandw"
---                        , VoteEffect Movie "19" "34" "35"
---                        , VoteEffect Movie "0" "34" "35"
---                        , VoteEffect Effect "vhs" "vhs" "bandw"
---                        , VoteEffect Movie "20" "34" "35"
---                        , VoteEffect Movie "10" "34" "35"
---                        , VoteEffect Effect "vanish" "fade" "dim"
---                        , VoteEffect Movie "15" "34" "35"
---                        ]
--- votes = table $ fromLists votesList
--- currentVote = selectD' (selectDRI ?~ (casti $ (chopChanName "segment" voteTimer) !+ (chopChanName "running" voteTimer))) votes
--- prevVote = selectD' (selectDRI ?~ (casti $ (chopChanName "segment" voteTimer))) votes
-
--- voteCount r v = count' ((countThresh ?~ (float 0.5)) . (countReset ?~ r) . (countResetCondition ?~ int 0)) v
-
--- maxVote = fan' ((fanOp .~ (Just $ int 1)) . (fanOffNeg ?~ bool False)) $
---             math' ((mathCombChops ?~ (int 4)) . (mathInt ?~ (int 2)))
---               [ mergeC $ voteCount (constC [voteEnabled]) <$> voteNums
---               , math' (mathCombChops ?~ (int 7)) $ voteCount (constC [voteEnabled]) <$> voteNums
---               ]
-
--- voteview = let c x = (int 0, int x)
---                mcell n =
---                  transformT' (transformTranslate._2 ?~ float (fromIntegral (n - 2) * 0.33))
---                  $ textT' (topResolution .~ iv2 (1920, 1080)) $ cell (c n) currentVote
---   in compT 0 $ mcell <$> [1..3]
-
--- -- Effects
-
--- effects = [ fix "bandw" $ N $ GLSLTOP (fix "bandwfrag" $ fileD "scripts/Lux/bandw.glsl") [] Nothing (iv2 (1920, 1080)) [] Nothing
---           , fix "vhs" $ N $ GLSLTOP (fix "vhsfrag" $ fileD "scripts/Lux/vhs.glsl") [("i_time", emptyV4 & _1 ?~ seconds)] Nothing (iv2 (1920, 1080)) [] Nothing
---           ]
-
--- effectVote = selectD' (selectDRExpr ?~ PyExpr "re.match('effect',me.inputCell.val) != None") prevVote
--- effectRunner t = datExec' ((datVars .~ [("base", Resolve movieout), ("voteResult", Resolve maxVote)]) . (deTableChange ?~ t)) effectVote
-
--- --Server
-
--- server = fix "server"
---   (fileD' (datVars .~ [ ("website", Resolve website)
---                      , ("control", Resolve control)
---                      , ("timer", Resolve voteTimer)
---                      , ("movieTimer", Resolve movieTimer)
---                      , ("base", Resolve movieout)
---                      , ("outf", Resolve finalout)
---                      ] ++ zipWith (\i v -> (BS.pack $ "vote" ++ show i, Resolve v)) [0..] voteNums) "scripts/Lux/server.py")
---         & tcpipD' ((tcpipMode ?~ (int 1)) . (tcpipCallbackFormat ?~ (int 2)))
-
--- peers = fix "myPeers" $ textD ""
--- closepeer = fix "closePeer" $ textD "args[0].close()"
--- website = fileD "scripts/Lux/website.html"
--- control = fileD "scripts/Lux/control.html"
-
--- sendServer = datExec' (deTableChange ?~ "  mod.server.updateVotes(dat[0, 1].val, dat[0,2].val, dat[0,3].val)") currentVote
-
--- voteNums = zipWith (\i c -> fix (BS.pack $ "voteNum" ++ show i) c) [0..] [constC [(float 0)], constC [(float 0)], constC [(float 0)]]
-
--- voteTimer = timerSeg' ((timerShowSeg ?~ bool True) . (timerCallbacks ?~ fileD "scripts/Lux/Lux/timer_callbacks.py"))
---   [ TimerSegment 0 8
---   , TimerSegment 0 8
---   , TimerSegment 0 8
---   , TimerSegment 0 8
---   , TimerSegment 0 8
---   , TimerSegment 0 8
---   ]
-
--- -- Helpers
-
--- invert l = logic' (logicPreop ?~ int 1) l
--- secChop = constC [floor seconds]

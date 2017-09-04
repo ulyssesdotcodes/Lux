@@ -92,9 +92,9 @@ view model =
     [ div [] (List.map viewMessage model.messages)
     , button [onClick (Send <| encodeOutMsg Reset)] [text "Reset"]
     , button [onClick (Send <| encodeOutMsg <| NextVote Show [0, 1, 2] )] [text "Show Vote 1"]
-    , button [onClick (Send <| encodeOutMsg <| NextVote Film [0, 1, 2] )] [text "Film Vote 1"]
+    , button [onClick (Send <| encodeOutMsg <| NextVote Film [0, 1, 2, 3, 4] )] [text "Film Vote 1"]
     , button [onClick (Send <| encodeOutMsg <| NextVote Show [2, 1, 0] )] [text "Show Vote 2"]
-    , button [onClick (Send <| encodeOutMsg <| NextVote Film [1, 4, 3] )] [text "Film Vote 2"]
+    , button [onClick (Send <| encodeOutMsg <| NextVote Film [0, 1, 2, 3, 4] )] [text "Film Vote 2"]
     ] ++ indexedMap (\i t -> button [onClick (Send <| encodeOutMsg <| Vote i)] [text t]) model.votes
 
 

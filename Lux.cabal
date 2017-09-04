@@ -24,6 +24,7 @@ library
                        , lens >= 4.15
                        , matrix >= 0.3
                        , mtl
+                       , random
                        , stm
                        , text
                        , websockets
