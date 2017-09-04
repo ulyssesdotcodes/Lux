@@ -24,7 +24,7 @@ type alias Model =
   , votes : List String
   }
 
-type OutgoingMsg = Connecting | Vote Int | NextVote VoteType (List Int) | Reset
+type OutgoingMsg = Connecting | Vote Int | NextVote VoteType (List Int) | Reset | KitchenScene | Underride
 type IncomingMsg = Votes (List String)
 type VoteType = Show | Film
 
@@ -46,6 +46,8 @@ encodeOutMsg msg =
       Vote i -> Json.Encode.object [("type", Json.Encode.string "vote"), ("index", Json.Encode.int i)]
       NextVote ty is-> Json.Encode.object [("type", Json.Encode.string <| "do" ++ voteType ty ++ "Vote"), ("votes", Json.Encode.list <| List.map Json.Encode.int is)]
       Reset -> Json.Encode.object [("type", Json.Encode.string "reset")]
+      KitchenScene -> Json.Encode.object [("type", Json.Encode.string "kitchenScene")]
+      Underride -> Json.Encode.object [("type", Json.Encode.string "underride")]
 
 decodeInMsg : String -> Result String IncomingMsg
 decodeInMsg msg =
@@ -91,6 +93,8 @@ view model =
   div [] <|
     [ div [] (List.map viewMessage model.messages)
     , button [onClick (Send <| encodeOutMsg Reset)] [text "Reset"]
+    , button [onClick (Send <| encodeOutMsg KitchenScene)] [text "Kitchen Scene"]
+    , button [onClick (Send <| encodeOutMsg Underride)] [text "Underride"]
     , button [onClick (Send <| encodeOutMsg <| NextVote Show [0, 1, 2] )] [text "Show Vote 1"]
     , button [onClick (Send <| encodeOutMsg <| NextVote Film [0, 1, 2, 3, 4] )] [text "Film Vote 1"]
     , button [onClick (Send <| encodeOutMsg <| NextVote Show [2, 1, 0] )] [text "Show Vote 2"]
