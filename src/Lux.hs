@@ -115,6 +115,7 @@ data FilmVote = FilmVote VoteText FilmData
 
 data FilmData = Movie Int
               | Effect (Tree TOP -> Tree TOP)
+              | Audio Int
 
 data ActiveVotes = ShowVotes [ (ShowVote, Int) ]
                  | FilmVotes [ (Int, Int) ]
@@ -137,6 +138,7 @@ instance Vote FilmVote where
       td &
         (movieDecks . accessor .~ films ! file) .
         (movieDeckIndex %~ B.bool Left Right . ((==) Left))
+  run (FilmVote _ (Audio file)) td = td & audioTrack ?~ audios ! file
   run (FilmVote _ (Effect eff)) td = td & effects %~ (eff:)
   voteText (FilmVote vt _) = vt
 
@@ -171,7 +173,7 @@ newServerState :: TOPRunner -> IO ServerState
 newServerState tr = newTDState >>= pure . ServerState [] tr
 
 newTDState :: IO TDState
-newTDState = getStdGen >>= pure . TDState NoVotes filmVotes Nothing Nothing ("", "") Right [] Nothing (Just $ audios ! 0) . randoms
+newTDState = newStdGen >>= pure . TDState NoVotes filmVotes Nothing Nothing ("", "") Right [] Nothing Nothing . randoms
 
 filmVotes :: Map Int FilmVote
 filmVotes = M.fromList [ (0, FilmVote (VoteText ("Basic", "B")) (Movie 0))
@@ -179,6 +181,7 @@ filmVotes = M.fromList [ (0, FilmVote (VoteText ("Basic", "B")) (Movie 0))
                       , (2, FilmVote (VoteText ("Airdancer", "A")) (Movie 2))
                       , (3, FilmVote (VoteText ("Black & White", "B&W")) (Effect $ glslTP' id "scripts/bandw.glsl" [] . (:[])))
                       , (4, FilmVote (VoteText ("VHS", "V")) (Effect $ glslTP' id "scripts/vhs.glsl" [("i_time", emptyV4 & _1 ?~ seconds)] . (:[])))
+                      , (5, FilmVote (VoteText ("Annoyance", "A")) (Audio 0))
                       ]
 
 films :: Map Int BS.ByteString
