@@ -91,6 +91,7 @@ data TDState = TDState { _activeVotes :: ActiveVotes
                        , _movieDeckIndex :: DeckIndex
                        , _effects :: [ Effect ]
                        , _videoOverride :: Maybe BS.ByteString
+                       , _audioTrack :: Maybe BS.ByteString
                        , _rlist :: [Float]
                        }
 
@@ -124,9 +125,9 @@ makeLenses ''TDState
 makeLenses ''ServerState
 
 instance Show TDState where
-  show (TDState {_activeVotes, _filmVotePool, _lastVoteWinner, _movieDecks, _effects, _videoOverride}) =
+  show (TDState {_activeVotes, _filmVotePool, _lastVoteWinner, _movieDecks, _effects, _videoOverride, _audioTrack}) =
     "activeVotes=" ++ (show $ activeVoteTexts _activeVotes) ++ " lastVoteWinner=" ++ show _lastVoteWinner ++
-    " movieDecks" ++ show _movieDecks ++ " videoOverride" ++ show _videoOverride
+    " movieDecks" ++ show _movieDecks ++ " videoOverride" ++ show _videoOverride ++ " audioTrack" ++ show _audioTrack
 
 instance Vote FilmVote where
   run (FilmVote _ (Movie file)) td =
@@ -170,7 +171,7 @@ newServerState :: TOPRunner -> IO ServerState
 newServerState tr = newTDState >>= pure . ServerState [] tr
 
 newTDState :: IO TDState
-newTDState = getStdGen >>= pure . TDState NoVotes filmVotes Nothing Nothing ("", "") Right [] Nothing . randoms
+newTDState = getStdGen >>= pure . TDState NoVotes filmVotes Nothing Nothing ("", "") Right [] Nothing (Just $ audios ! 0) . randoms
 
 filmVotes :: Map Int FilmVote
 filmVotes = M.fromList [ (0, FilmVote (VoteText ("Basic", "B")) (Movie 0))
@@ -186,6 +187,9 @@ films = M.fromList [ (0, "Holme/hlme000a_hap.mov")
                    , (2, "Holme/hlme000d_hap.mov")
                    ]
 
+audios :: Map Int BS.ByteString
+audios = M.fromList [ (0, "Holme/TAKEONMEUCC.mp3")
+                    ]
 
 showVotes :: Map Int ShowVote
 showVotes = M.fromList [ (0, ShowVote $ VoteText ("Basic", "B"))
@@ -215,7 +219,7 @@ loop count = do
   loop count
 
 renderTDState :: TDState -> (Tree TOP, Tree CHOP)
-renderTDState (TDState {_activeVotes, _lastVoteWinner, _voteTimer, _movieDecks, _movieDeckIndex, _effects, _videoOverride}) =
+renderTDState (TDState {_activeVotes, _lastVoteWinner, _voteTimer, _movieDecks, _movieDeckIndex, _effects, _videoOverride, _audioTrack}) =
   (outT $ compT 0
   $ zipWith renderVote [0..] votes
   ++ maybeToList (resText . (++) "Last vote: " . unpack . snd . voteNames <$> _lastVoteWinner)
@@ -229,11 +233,15 @@ renderTDState (TDState {_activeVotes, _lastVoteWinner, _voteTimer, _movieDecks, 
       , (mv $ snd _movieDecks)
       ]) & (foldl (.) id _effects)
      ] ((:[]) . mv) _videoOverride
-  , maybe (switchC
-      (casti . chopChan0 . constC . (:[]) . B.bool (float 0) (float 1) . ((==) Right) $ _movieDeckIndex)
-      [ audioMovie (mv $ fst _movieDecks)
-      , audioMovie (mv $ snd _movieDecks)
-      ]) (audioMovie . mv) _videoOverride & audioDevOut' (audioDevOutVolume ?~ float 0))
+  , audioDevOut' (audioDevOutVolume ?~ float 0.3) $
+    maybe (math' opsadd $
+                  [ switchC
+                      (casti . chopChan0 . constC . (:[]) . B.bool (float 0) (float 1) . ((==) Right) $ _movieDeckIndex)
+                      [ audioMovie (mv $ fst _movieDecks)
+                      , audioMovie (mv $ snd _movieDecks)
+                      ]
+                  ] ++ maybeToList (audioFileIn . str . BS.unpack <$> _audioTrack)) (audioMovie . mv) _videoOverride
+  )
   where
     renderVote idx (voteName, tally) =
       (resText .  (flip (++) $ show tally) . unpack $ voteName)
