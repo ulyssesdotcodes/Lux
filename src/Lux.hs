@@ -336,7 +336,7 @@ nextFilmVote ids td =
     fvp = td ^. filmVotePool
     rlist' = td ^. rlist
     rvotes rs vs = (drop (length vs) rlist',) . take 3 . nub . catMaybes . snd $ mapAccumL (flip popAt) vs (zipWith rids (backsaw $ length vs) rs)
-    rids l r = Prelude.floor $ r * (fromIntegral l)
+    rids l r = Prelude.floor $ r * (fromIntegral l + 1)
   in
     td & (activeVotes .~ newVotes) . (rlist .~ newrs)
 
@@ -365,23 +365,12 @@ endVote td@(TDState { _activeVotes = FilmVotes vs }) =
     td &
       (activeVotes .~ NoVotes) .
       (lastVoteWinner ?~ (voteText maxVote'')) .
-      (runFilmVote maxVote'') .
+      (Lux.run maxVote'') .
       (filmVotePool %~ M.delete maxVote')
 endVote td@(TDState { _activeVotes = NoVotes }) = td
 
 maxVote :: [(a, Int)] -> a
 maxVote = fst . maximumBy (flip (flip compare . snd) . snd)
-
-runFilmVote :: FilmVote -> TDState -> TDState
-runFilmVote (FilmVote _ (Movie m)) td =
-  let
-    accessor = if (td ^. movieDeckIndex) == Right then _1 else _2
-  in
-    td &
-      (movieDecks . accessor .~ films ! m) .
-      (movieDeckIndex %~ B.bool Left Right . ((==) Left))
-
-runFilmVote (FilmVote _ (Effect e)) td = td & effects %~ (e:)
 
 
 -- Timer
