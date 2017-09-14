@@ -9211,25 +9211,6 @@ var _user$project$Main$encodeOutMsg = function (msg) {
 							},
 							_1: {ctor: '[]'}
 						});
-				case 'Vote':
-					return _elm_lang$core$Json_Encode$object(
-						{
-							ctor: '::',
-							_0: {
-								ctor: '_Tuple2',
-								_0: 'type',
-								_1: _elm_lang$core$Json_Encode$string('vote')
-							},
-							_1: {
-								ctor: '::',
-								_0: {
-									ctor: '_Tuple2',
-									_0: 'index',
-									_1: _elm_lang$core$Json_Encode$int(_p1._0)
-								},
-								_1: {ctor: '[]'}
-							}
-						});
 				case 'NextVote':
 					return _elm_lang$core$Json_Encode$object(
 						{
@@ -9304,9 +9285,6 @@ var _user$project$Main$NextVote = F2(
 	function (a, b) {
 		return {ctor: 'NextVote', _0: a, _1: b};
 	});
-var _user$project$Main$Vote = function (a) {
-	return {ctor: 'Vote', _0: a};
-};
 var _user$project$Main$Connecting = {ctor: 'Connecting'};
 var _user$project$Main$Votes = function (a) {
 	return {ctor: 'Votes', _0: a};
@@ -9623,15 +9601,8 @@ var _user$project$Main$view = function (model) {
 				F2(
 					function (i, t) {
 						return A2(
-							_elm_lang$html$Html$button,
-							{
-								ctor: '::',
-								_0: _elm_lang$html$Html_Events$onClick(
-									_user$project$Main$Send(
-										_user$project$Main$encodeOutMsg(
-											_user$project$Main$Vote(i)))),
-								_1: {ctor: '[]'}
-							},
+							_elm_lang$html$Html$p,
+							{ctor: '[]'},
 							{
 								ctor: '::',
 								_0: _elm_lang$html$Html$text(t),

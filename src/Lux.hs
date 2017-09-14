@@ -317,7 +317,7 @@ receive conn state (id, _) = do
 
 broadcast :: OutMsg -> [Client] -> IO ()
 broadcast msg cs = do
-  forM_ cs $ \(_, conn) -> WS.sendTextData conn (encode msg)
+  forM_ (traceShow (length cs) $ cs) $ \(_, conn) -> WS.sendTextData conn (encode msg)
 
 -- Votes
 
