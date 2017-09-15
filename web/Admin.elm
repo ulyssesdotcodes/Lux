@@ -22,10 +22,11 @@ main =
 type alias Model =
   { messages : List String
   , votes : List String
+  , passworded : Bool
   }
 
 type OutgoingMsg = Connecting | NextVote VoteType (List Int) | Reset | KitchenScene | Underride
-type IncomingMsg = Votes (List String)
+type IncomingMsg = Votes (List String) | PasswordResult Bool
 type VoteType = Show | Film
 
 voteType : VoteType -> String
@@ -36,13 +37,13 @@ voteType vt =
 
 init : (Model, Cmd Msg)
 init =
-  (Model [] [], perform Send (Connecting |> encodeOutMsg |> Task.succeed))
+  (Model [] [] False, perform Send (Connecting |> encodeOutMsg |> Task.succeed))
 
 encodeOutMsg : OutgoingMsg -> String
 encodeOutMsg msg =
   encode 0 <|
     case msg of
-      Connecting -> Json.Encode.object [("type", Json.Encode.string "connecting")]
+      Connecting -> Json.Encode.object [("type", Json.Encode.string "connecting"), ("password", Json.Encode.string "password")]
       NextVote ty is-> Json.Encode.object [("type", Json.Encode.string <| "do" ++ voteType ty ++ "Vote"), ("votes", Json.Encode.list <| List.map Json.Encode.int is)]
       Reset -> Json.Encode.object [("type", Json.Encode.string "reset")]
       KitchenScene -> Json.Encode.object [("type", Json.Encode.string "kitchenScene")]
@@ -52,8 +53,14 @@ decodeInMsg : String -> Result String IncomingMsg
 decodeInMsg msg =
   let
     decodeVotes = Json.Decode.map Votes (field "votes" <| Json.Decode.list Json.Decode.string)
+    decodePassResult = Json.Decode.map PasswordResult (field "success" <| Json.Decode.bool)
+    decodeAll ty =
+      case ty of
+        "vote" -> decodeVotes
+        "password" -> decodePassResult
+        _ -> Json.Decode.fail "Message type wrong"
   in
-    flip decodeString msg <| decodeVotes
+    field "type" Json.Decode.string |> Json.Decode.andThen decodeAll |> flip decodeString msg
 
 
 -- UPDATE
@@ -73,6 +80,9 @@ update msg model =
       case decodeInMsg str of
         Ok (Votes vts) ->
           ({ model | votes = vts }, Cmd.none)
+
+        Ok (PasswordResult ps) ->
+          ({ model | passworded = ps }, Cmd.none)
 
         _ ->
           ({ model | messages = str :: model.messages }, Cmd.none)

@@ -49,10 +49,11 @@ type TOPRunner = ((Tree TOP, Tree CHOP) -> IO ())
 data ServerState =
   ServerState { _clients :: [Client]
               , _runner :: TOPRunner
+              , _password :: Text
               , _tdState :: TDState
               }
 
-data Message = Connecting
+data Message = Connecting Text
   | RegisterVote Int
   | DoShowVote [Int]
   | DoFilmVote [Int]
@@ -67,7 +68,7 @@ instance FromJSON Message where
   parseJSON = withObject "message" $ \o -> do
     ty <- o .: "type"
     case ty of
-      "connecting" -> return Connecting
+      "connecting" -> Connecting <$> o.: "password"
       "vote" -> RegisterVote <$> o .: "index"
       "doShowVote" -> DoShowVote <$> o .: "votes"
       "doFilmVote" -> DoFilmVote <$> o .: "votes"
@@ -76,10 +77,11 @@ instance FromJSON Message where
       "reset" -> return Reset
       _ -> fail ("Unknown type " ++ ty)
 
-data OutMsg = VotesMsg [Text]
+data OutMsg = VotesMsg [Text] | PasswordResult Bool
 
 instance ToJSON OutMsg where
   toJSON (VotesMsg vs) = object ["type" A..= "vote", "votes" A..= vs]
+  toJSON (PasswordResult b) = object ["type" A..= "password", "success" A..= b]
 
 type Effect = Tree TOP -> Tree TOP
 
@@ -142,7 +144,7 @@ instance Vote FilmVote where
   run (FilmVote _ (Effect eff)) td = td & effects %~ (eff:)
   voteText (FilmVote vt _) = vt
 
--- Vote is a 
+-- Vote is a
 
 -- Every vote: announcement that vote is up, voting update w/ countdown, 10 sec announcement, vote locked - loading vote audio, vote 
 -- data VoteType =
@@ -170,7 +172,7 @@ activeVoteTexts (FilmVotes vs) = catMaybes $ fmap voteText . flip lookup filmVot
 activeVoteTexts NoVotes = []
 
 newServerState :: TOPRunner -> IO ServerState
-newServerState tr = newTDState >>= pure . ServerState [] tr
+newServerState tr = newTDState >>= pure . ServerState [] tr "password"
 
 newTDState :: IO TDState
 newTDState = newStdGen >>= pure . TDState NoVotes filmVotes Nothing Nothing ("", "") Right [] Nothing Nothing . randoms
@@ -283,10 +285,15 @@ application state pending = do
   let mclients = mstate ^. clients
       id = length mclients
   case decode jmsg of
-    (Just Connecting) ->
+    (Just (Connecting ps)) ->
+      if (traceShowId ps) == (traceShowId $ mstate ^. password) then
         flip finally disconnect $ do
+          putStrLn "here"
+          WS.sendTextData conn (encode $ PasswordResult True)
           liftIO $ modifyMVar_ state $ pure . (clients %~ ((:) (id, conn)))
           receive conn state (id, conn)
+      else
+        WS.sendTextData conn (encode $ PasswordResult False)
       where
         disconnect = modifyMVar_ state (return . (clients %~ filter ((/= id) . fst)))
     _ -> WS.sendTextData conn ("Nope" :: Text)
@@ -301,7 +308,7 @@ receive conn state (id, _) = do
       (Just Reset) -> newTDState >>= flip modifyTDState state . const
       (Just (DoFilmVote vs)) -> startTimer (nextFilmVote vs)
       (Just (DoShowVote vs)) -> startTimer (nextShowVote vs)
-      (Just Connecting) -> putStrLn "Connecting twice?"
+      (Just (Connecting ps)) -> putStrLn "Connecting twice?"
       (Just KitchenScene) -> modifyTDState (overrideFilm 0) state
       (Just Underride) -> modifyTDState (videoOverride .~ Nothing) state
       Nothing -> putStrLn "Unrecognized message"
@@ -317,7 +324,7 @@ receive conn state (id, _) = do
 
 broadcast :: OutMsg -> [Client] -> IO ()
 broadcast msg cs = do
-  forM_ (traceShow (length cs) $ cs) $ \(_, conn) -> WS.sendTextData conn (encode msg)
+  forM_ cs $ \(_, conn) -> WS.sendTextData conn (encode msg)
 
 -- Votes
 
