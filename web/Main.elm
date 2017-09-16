@@ -38,7 +38,7 @@ voteType vt =
 
 init : (Model, Cmd Msg)
 init =
-  (Model [] [] "" False, Cmd.none)
+  (Model [] [] "" False, perform Send (Connecting "password" |> encodeOutMsg |> Task.succeed))
 
 -- perform Send (Connecting |> encodeOutMsg |> Task.succeed)
 

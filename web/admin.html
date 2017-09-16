@@ -9209,7 +9209,15 @@ var _user$project$Main$encodeOutMsg = function (msg) {
 								_0: 'type',
 								_1: _elm_lang$core$Json_Encode$string('connecting')
 							},
-							_1: {ctor: '[]'}
+							_1: {
+								ctor: '::',
+								_0: {
+									ctor: '_Tuple2',
+									_0: 'password',
+									_1: _elm_lang$core$Json_Encode$string('password')
+								},
+								_1: {ctor: '[]'}
+							}
 						});
 				case 'NextVote':
 					return _elm_lang$core$Json_Encode$object(
@@ -9274,9 +9282,9 @@ var _user$project$Main$encodeOutMsg = function (msg) {
 			}
 		}());
 };
-var _user$project$Main$Model = F2(
-	function (a, b) {
-		return {messages: a, votes: b};
+var _user$project$Main$Model = F3(
+	function (a, b, c) {
+		return {messages: a, votes: b, passworded: c};
 	});
 var _user$project$Main$Underride = {ctor: 'Underride'};
 var _user$project$Main$KitchenScene = {ctor: 'KitchenScene'};
@@ -9286,10 +9294,17 @@ var _user$project$Main$NextVote = F2(
 		return {ctor: 'NextVote', _0: a, _1: b};
 	});
 var _user$project$Main$Connecting = {ctor: 'Connecting'};
+var _user$project$Main$PasswordResult = function (a) {
+	return {ctor: 'PasswordResult', _0: a};
+};
 var _user$project$Main$Votes = function (a) {
 	return {ctor: 'Votes', _0: a};
 };
 var _user$project$Main$decodeInMsg = function (msg) {
+	var decodePassResult = A2(
+		_elm_lang$core$Json_Decode$map,
+		_user$project$Main$PasswordResult,
+		A2(_elm_lang$core$Json_Decode$field, 'success', _elm_lang$core$Json_Decode$bool));
 	var decodeVotes = A2(
 		_elm_lang$core$Json_Decode$map,
 		_user$project$Main$Votes,
@@ -9297,35 +9312,63 @@ var _user$project$Main$decodeInMsg = function (msg) {
 			_elm_lang$core$Json_Decode$field,
 			'votes',
 			_elm_lang$core$Json_Decode$list(_elm_lang$core$Json_Decode$string)));
-	return A3(_elm_lang$core$Basics$flip, _elm_lang$core$Json_Decode$decodeString, msg, decodeVotes);
+	var decodeAll = function (ty) {
+		var _p2 = ty;
+		switch (_p2) {
+			case 'vote':
+				return decodeVotes;
+			case 'password':
+				return decodePassResult;
+			default:
+				return _elm_lang$core$Json_Decode$fail('Message type wrong');
+		}
+	};
+	return A3(
+		_elm_lang$core$Basics$flip,
+		_elm_lang$core$Json_Decode$decodeString,
+		msg,
+		A2(
+			_elm_lang$core$Json_Decode$andThen,
+			decodeAll,
+			A2(_elm_lang$core$Json_Decode$field, 'type', _elm_lang$core$Json_Decode$string)));
 };
 var _user$project$Main$update = F2(
 	function (msg, model) {
-		var _p2 = msg;
-		if (_p2.ctor === 'Send') {
+		var _p3 = msg;
+		if (_p3.ctor === 'Send') {
 			return {
 				ctor: '_Tuple2',
 				_0: model,
-				_1: A2(_elm_lang$websocket$WebSocket$send, 'ws://localhost:9160', _p2._0)
+				_1: A2(_elm_lang$websocket$WebSocket$send, 'ws://localhost:9160', _p3._0)
 			};
 		} else {
-			var _p4 = _p2._0;
-			var _p3 = _user$project$Main$decodeInMsg(_p4);
-			if (_p3.ctor === 'Ok') {
-				return {
-					ctor: '_Tuple2',
-					_0: _elm_lang$core$Native_Utils.update(
-						model,
-						{votes: _p3._0._0}),
-					_1: _elm_lang$core$Platform_Cmd$none
-				};
+			var _p5 = _p3._0;
+			var _p4 = _user$project$Main$decodeInMsg(_p5);
+			if (_p4.ctor === 'Ok') {
+				if (_p4._0.ctor === 'Votes') {
+					return {
+						ctor: '_Tuple2',
+						_0: _elm_lang$core$Native_Utils.update(
+							model,
+							{votes: _p4._0._0}),
+						_1: _elm_lang$core$Platform_Cmd$none
+					};
+				} else {
+					return {
+						ctor: '_Tuple2',
+						_0: _elm_lang$core$Native_Utils.update(
+							model,
+							{passworded: _p4._0._0}),
+						_1: _elm_lang$core$Platform_Cmd$none
+					};
+				}
 			} else {
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
 						{
-							messages: {ctor: '::', _0: _p4, _1: model.messages}
+							messages: {ctor: '::', _0: _p5, _1: model.messages}
 						}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
@@ -9345,10 +9388,11 @@ var _user$project$Main$Send = function (a) {
 };
 var _user$project$Main$init = {
 	ctor: '_Tuple2',
-	_0: A2(
+	_0: A3(
 		_user$project$Main$Model,
 		{ctor: '[]'},
-		{ctor: '[]'}),
+		{ctor: '[]'},
+		false),
 	_1: A2(
 		_elm_lang$core$Task$perform,
 		_user$project$Main$Send,
