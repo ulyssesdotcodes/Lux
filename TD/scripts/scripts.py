@@ -129,8 +129,6 @@ def apply(newState):
       elif diffi[0] == 'change':
         addParameter(curop, splits[2], diffi[2][1])
       elif diffi[0] == 'remove':
-        print(diffi)
-        print(splits)
         for param in diffi[2]:
           par = curop.pars(param[0])[0]
           if par.val:
@@ -148,31 +146,15 @@ def getName(name):
 
 def addAll(state):
   connections = []
-  for key,value in state:
+  queue = state
+  while len(queue) > 0:
+    (key, value) = queue.pop()
     addr = getName(key)
-
-    newOp = createOp(addr, value['ty'])
-
-    if 'parameters' in value:
-      pars = value['parameters'].items()
-      tox = next((x for x in pars if x[0] == 'externaltox'), None)
-      if tox != None:
-        pars = [x for x in pars if x[0] != 'externaltox']
-        pars.insert(0, tox)
-
-      for k,v in pars:
-        addParameter(newOp, k, v)
-
-    if 'commands' in value:
-      coms = value['commands']
-      for comm in coms:
-        runCommand(newOp, comm['command'], comm['args'])
-
-    if 'text' in value and value['text'] != None:
-      newOp.text = value['text']
-
-    if 'connections' in value:
-      connections.extend([c, addr, i] for i,c in enumerate(value['connections']))
+    par = addr[:(addr.rfind('/'))]
+    if op(par) != None:
+      connections.extend(list(addChange(key, value)))
+    else:
+      queue.append((key, value))
 
   for conn in connections:
     if conn[0] == '' or op(getName(conn[0])) == None:
@@ -181,6 +163,32 @@ def addAll(state):
       for connector in op(conn[1]).inputConnectors:
         connector.disconnect()
     op(getName(conn[0])).outputConnectors[0].connect(op(conn[1]).inputConnectors[conn[2]])
+
+def addChange(key, value):
+  addr = getName(key)
+
+  newOp = createOp(addr, value['ty'])
+
+  if 'parameters' in value:
+    pars = value['parameters'].items()
+    tox = next((x for x in pars if x[0] == 'externaltox'), None)
+    if tox != None:
+      pars = [x for x in pars if x[0] != 'externaltox']
+      pars.insert(0, tox)
+
+    for k,v in pars:
+      addParameter(newOp, k, v)
+
+  if 'commands' in value:
+    coms = value['commands']
+    for comm in coms:
+      runCommand(newOp, comm['command'], comm['args'])
+
+  if 'text' in value and value['text'] != None:
+    newOp.text = value['text']
+
+  if 'connections' in value:
+    return ((c, addr, i) for i,c in enumerate(value['connections']))
 
 def createOp(addr, ty):
   clazz = getClass(ty, 'none')

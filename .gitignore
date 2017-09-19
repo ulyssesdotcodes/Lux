@@ -23,6 +23,7 @@ cabal.project.local
 *.mp4
 *.mov
 *.mp3
+*.mpeg
 
 # elm-package generated files
 elm-stuff
