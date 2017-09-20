@@ -187,7 +187,7 @@ filmVotes = M.fromList [ (1, FilmVote (VoteText ("Six foot Orange", "SFO")) (InC
                       , (6, FilmVote (VoteText ("Square", "S")) (Effect $ glslTP' id "scripts/crop.glsl" [("uAspectRatio", emptyV4 & _1 ?~ float 1)] . (:[])))
                       , (7, FilmVote (VoteText ("Cinescope", "C")) (Effect $ glslTP' id "scripts/crop.glsl" [("uAspectRatio", emptyV4 & _1 ?~ float 2.35)] . (:[])))
                       , (8, FilmVote (VoteText ("Imax", "I")) (Effect $ glslTP' id "scripts/crop.glsl" [("uAspectRatio", emptyV4 & _1 ?~ float 1.43)] . (:[])))
-                      , (9, FilmVote (VoteText ("Artistic Significance", "AS")) (InCamera 16))
+                      , (9, FilmVote (VoteText ("Artistic Significance", "AS")) (InCamera 8))
                       ]
 
 films :: Map Int MovieData
@@ -236,7 +236,7 @@ renderTDState td@(TDState {_activeVotes, _lastVoteWinner, _voteTimer, _movie, _e
                   $ (!*) . msToF
                   <*> ((!+) (float 1) . (!*) (float (-1))) . chopChanName "timer_fraction" . (timerS' (timerStart .~ True)) . msToF
                   <$> _voteTimer)
-  ++ [ mv _movie ]
+  ++ [ mv _movie & (foldl (.) id _effects) ]
   , audioDevOut' (audioDevOutVolume ?~ float 0.3) $
     math' opsadd $
                   [ audioMovie (mv _movie)
@@ -269,7 +269,7 @@ modifyTDState f state = do
 
 serve :: MVar ServerState -> IO ()
 serve state = do
-  _ <- async $ WS.runServer "127.0.0.1" 9160 . application $ state
+  _ <- async $ WS.runServer "0.0.0.0" 9160 . application $ state
   threadDelay 1000000000
 
 application :: MVar ServerState -> WS.ServerApp

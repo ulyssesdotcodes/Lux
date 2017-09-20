@@ -3,13 +3,14 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Json.Encode exposing (..)
 import Json.Decode exposing (..)
-import WebSocket
 import List exposing (..)
+import Navigation exposing (..)
 import Task exposing (..)
+import WebSocket
 
 
 main =
-  Html.program
+  Navigation.program SetLocation
     { init = init
     , view = view
     , update = update
@@ -23,6 +24,7 @@ type alias Model =
   { messages : List String
   , votes : List String
   , passworded : Bool
+  , location : Location
   }
 
 type OutgoingMsg = Connecting | NextVote VoteType (List Int) | Reset | KitchenScene | MainReel
@@ -35,9 +37,9 @@ voteType vt =
     Show -> "Show"
     Film -> "Film"
 
-init : (Model, Cmd Msg)
-init =
-  (Model [] [] False, perform Send (Connecting |> encodeOutMsg |> Task.succeed))
+init : Location -> (Model, Cmd Msg)
+init loc =
+  (Model [] [] False loc, perform Send (Connecting |> encodeOutMsg |> Task.succeed))
 
 encodeOutMsg : OutgoingMsg -> String
 encodeOutMsg msg =
@@ -68,13 +70,19 @@ decodeInMsg msg =
 type Msg
   = Send String
   | NewMessage String
+  | SetLocation Location
 
+wsloc : Location -> String
+wsloc loc = "ws://" ++ loc.hostname ++ ":9160"
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
     Send wsmsg ->
-      (model, WebSocket.send "ws://localhost:9160" wsmsg)
+      (model, WebSocket.send (wsloc model.location) wsmsg)
+
+    SetLocation loc ->
+      ({ model | location = loc }, Cmd.none)
 
     NewMessage str ->
       case decodeInMsg str of
@@ -92,7 +100,7 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-  WebSocket.listen "ws://localhost:9160" NewMessage
+  WebSocket.listen (wsloc model.location) NewMessage
 
 
 -- VIEW
