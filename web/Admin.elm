@@ -27,7 +27,7 @@ type alias Model =
   , location : Location
   }
 
-type OutgoingMsg = Connecting | NextVote VoteType (List Int) | Reset | KitchenScene | MainReel
+type OutgoingMsg = Connecting | NextVote VoteType (List Int) | Reset | KitchenScene | MainReel | OffsetTime Float
 type IncomingMsg = Votes (List String) | PasswordResult Bool
 type VoteType = Show | Film
 
@@ -50,6 +50,7 @@ encodeOutMsg msg =
       Reset -> Json.Encode.object [("type", Json.Encode.string "reset")]
       KitchenScene -> Json.Encode.object [("type", Json.Encode.string "kitchenScene")]
       MainReel -> Json.Encode.object [("type", Json.Encode.string "mainReel")]
+      OffsetTime t -> Json.Encode.object [("type", Json.Encode.string "offsetTime"), ("timeOffset", Json.Encode.float t)]
 
 decodeInMsg : String -> Result String IncomingMsg
 decodeInMsg msg =
@@ -112,6 +113,9 @@ view model =
     , button [onClick (Send <| encodeOutMsg Reset)] [text "Reset"]
     , button [onClick (Send <| encodeOutMsg KitchenScene)] [text "Kitchen Scene"]
     , button [onClick (Send <| encodeOutMsg MainReel)] [text "MainReel"]
+    , button [onClick (Send <| encodeOutMsg <| OffsetTime (-10))] [text "RW"]
+    , button [onClick (Send <| encodeOutMsg <| OffsetTime 10)] [text "FFW"]
+    , button [onClick (Send <| encodeOutMsg <| NextVote Film [6, 7, 8] )] [text "Aspect ratios"]
     , button [onClick (Send <| encodeOutMsg <| NextVote Show [0, 1, 2] )] [text "Show Vote 1"]
     , button [onClick (Send <| encodeOutMsg <| NextVote Film [1, 2, 3, 4, 9] )] [text "Film Vote 1"]
     , button [onClick (Send <| encodeOutMsg <| NextVote Show [2, 1, 0] )] [text "Show Vote 2"]

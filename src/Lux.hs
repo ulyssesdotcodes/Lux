@@ -62,6 +62,7 @@ data Message = Connecting Text
   | Reset
   | KitchenScene
   | MainReel
+  | OffsetTime Float
   -- Triger(movie,lux,etc), GotoTime,
 
 data OutputState = Tree TOP
@@ -74,6 +75,7 @@ instance FromJSON Message where
       "vote" -> RegisterVote <$> o .: "index"
       "doShowVote" -> DoShowVote <$> o .: "votes"
       "doFilmVote" -> DoFilmVote <$> o .: "votes"
+      "offsetTime" -> OffsetTime <$> o .: "timeOffset"
       "kitchenScene" -> return KitchenScene
       "mainReel" -> return MainReel
       "reset" -> return Reset
@@ -102,6 +104,7 @@ data MovieData = MovieData { movieFile :: TDState -> String
                            , movieLength :: Float
                            , movieCycle :: Bool
                            , movieEffects :: Bool
+                           , movieTimeOffset :: Float
                            }
 
 data DeckIndex = Left | Right deriving (Show, Eq)
@@ -191,9 +194,9 @@ filmVotes = M.fromList [ (1, FilmVote (VoteText ("Six foot Orange", "SFO")) (InC
                       ]
 
 films :: Map Int MovieData
-films = M.fromList [ (0, MovieData (printf "Holme/%05b.mov" . _inCamera) 1357 False True)
-                   , (1, MovieData (const "Holme/hlme000ac_hap.mov") 10 False False)
-                   , (2, MovieData (const "Holme/hlme000d_hap.mov") 10 False False)
+films = M.fromList [ (0, MovieData (printf "Holme/%05b.mov" . _inCamera) 1357 False True 0)
+                   , (1, MovieData (const "Holme/hlme000ac_hap.mov") 10 False False 0)
+                   , (2, MovieData (const "Holme/hlme000d_hap.mov") 10 False False 0)
                    ]
 
 audios :: Map Int BS.ByteString
@@ -247,8 +250,8 @@ renderTDState td@(TDState {_activeVotes, _lastVoteWinner, _voteTimer, _movie, _e
       (resText .  (flip (++) $ show tally) . unpack $ voteName)
       & transformT' (transformTranslate .~ (Nothing, Just . float $ (1 - 0.33 * (fromIntegral $ idx) - 0.66)))
     msToF = float . (flip (/) 1000.0) . fromIntegral
-    mv mf = movieFileIn' ((moviePlayMode ?~ int 0) . ((?~) movieIndex $ casti . chopChan0 . mvtimer $ mf)) . str $ movieFile mf td
-    mvtimer mvd = timerS' ((timerCount ?~ int 2) . (timerShowFraction ?~ bool False) . (timerStart .~ True) . (timerCycle ?~ bool (movieCycle mvd)) . (timerCycleLimit ?~ bool (movieCycle mvd))) (float $ movieLength mvd)
+    mv mf = movieFileIn' ((moviePlayMode ?~ int 0) . ((?~) movieIndex $ casti . mvtimer $ mf)) . str $ movieFile mf td
+    mvtimer mvd = (float $ 60 * movieTimeOffset mvd) !+ (chopChan0 $ timerS' ((timerCount ?~ int 2) . (timerShowFraction ?~ bool False) . (timerStart .~ True) . (timerCycle ?~ bool (movieCycle mvd)) . (timerCycleLimit ?~ bool (movieCycle mvd))) (float $ movieLength mvd - movieTimeOffset mvd))
     votes =
       case _activeVotes of
         (ShowVotes vs) -> vs & traverse . _1 %~ (fst . voteNames . voteText)
@@ -307,6 +310,7 @@ receive conn state (id, _) = do
       (Just (Connecting ps)) -> putStrLn "Connecting twice?"
       (Just MainReel) -> modifyTDState (changeReel 0) state
       (Just KitchenScene) -> modifyTDState (changeReel 1) state
+      (Just (OffsetTime t)) -> modifyTDState (changeTime t) state
       Nothing -> putStrLn "Unrecognized message"
   wait thr
   where
@@ -345,6 +349,9 @@ nextFilmVote ids td =
 
 changeReel :: Int -> TDState -> TDState
 changeReel id = movie .~ films ! id
+
+changeTime :: Float -> TDState -> TDState
+changeTime dt = movie %~ (\(MovieData f l c e t) -> MovieData f l c e (t + dt))
 
 backsaw :: Int -> [Int]
 backsaw n = [n - 1, n - 2 .. 0]
