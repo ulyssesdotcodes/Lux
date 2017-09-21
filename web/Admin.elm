@@ -106,10 +106,37 @@ subscriptions model =
 
 -- VIEW
 
+styleTag : Html Msg
+styleTag =
+  let
+    styles =
+      """
+button {
+  -webkit-border-radius: 6;
+  -moz-border-radius: 6;
+  border-radius: 6px;
+  font-family: Courier New;
+  color: #000000;
+  font-size: 20px;
+  background: #ffffff;
+  padding: 10px 20px 10px 20px;
+  border: solid #ff7373 2px;
+  text-decoration: none;
+}
+
+button:hover {
+  background: #546ff2;
+  text-decoration: none;
+}
+      """
+  in
+    node "style" [] [text styles]
+
 view : Model -> Html Msg
 view model =
   div [] <|
-    [ div [] (List.map viewMessage model.messages)
+    [ styleTag
+    , div [] (List.map viewMessage model.messages)
     , button [onClick (Send <| encodeOutMsg Reset)] [text "Reset"]
     , button [onClick (Send <| encodeOutMsg KitchenScene)] [text "Kitchen Scene"]
     , button [onClick (Send <| encodeOutMsg MainReel)] [text "MainReel"]

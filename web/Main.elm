@@ -4,6 +4,7 @@ import Html.Events exposing (..)
 import Json.Encode exposing (..)
 import Json.Decode exposing (..)
 import List exposing (..)
+import Maybe exposing (..)
 import Navigation exposing (..)
 import Task exposing (..)
 import WebSocket
@@ -26,6 +27,7 @@ type alias Model =
   , password : String
   , connected : Bool
   , location : Location
+  , votedNum : Maybe Int
   }
 
 type OutgoingMsg = Connecting String | Vote Int
@@ -40,7 +42,7 @@ voteType vt =
 
 init : Location -> (Model, Cmd Msg)
 init loc =
-  (Model [] [] "" False loc, perform Send (Connecting "password" |> encodeOutMsg |> Task.succeed))
+  (Model [] [] "" False loc Nothing, perform Connect ("password" |> Task.succeed))
 
 -- perform Send (Connecting |> encodeOutMsg |> Task.succeed)
 
@@ -68,10 +70,11 @@ decodeInMsg msg =
 -- UPDATE
 
 type Msg
-  = Send String
+  = Connect String
   | NewMessage String
   | Password String
   | SetLocation Location
+  | ChooseVote Int
 
 wsloc : Location -> String
 wsloc loc = "ws://" ++ loc.hostname ++ ":9160"
@@ -79,13 +82,20 @@ wsloc loc = "ws://" ++ loc.hostname ++ ":9160"
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
-    Send wsmsg ->
-      (model, WebSocket.send (wsloc model.location) wsmsg)
+    ChooseVote i ->
+      ({ model | votedNum = Just i }, WebSocket.send (wsloc model.location) <| encodeOutMsg (Vote i))
+
+    Connect pass ->
+      (model, WebSocket.send (wsloc model.location) <| encodeOutMsg (Connecting pass))
+
 
     NewMessage str ->
       case decodeInMsg str of
         Ok (Votes vts) ->
-          ({ model | votes = vts }, Cmd.none)
+          case model.votes == vts of
+            True -> (model, Cmd.none)
+            False ->
+              ({ model | votes = vts, votedNum = Nothing}, Cmd.none)
 
         Ok (PasswordResult True) ->
           ({ model | connected = True }, Cmd.none)
@@ -109,13 +119,43 @@ subscriptions model =
 
 -- VIEW
 
+styleTag : Html Msg
+styleTag =
+  let
+    styles =
+      """
+button {
+  -webkit-border-radius: 6;
+  -moz-border-radius: 6;
+  border-radius: 6px;
+  font-family: Courier New;
+  color: #000000;
+  font-size: 20px;
+  background: #ffffff;
+  padding: 10px 20px 10px 20px;
+  border: solid #ff7373 2px;
+  text-decoration: none;
+}
+
+button:hover, button:active {
+  background: #546ff2;
+  text-decoration: none;
+}
+
+button:disabled {
+  background: #cccccc;
+}
+      """
+  in
+    node "style" [] [text styles]
+
 view : Model -> Html Msg
 view model =
-  div [] <|
+  div [] <| [styleTag] ++
     case model.connected of
-      True -> indexedMap (\i t -> button [onClick (Send <| encodeOutMsg <| Vote i)] [text t]) model.votes
+      True -> indexedMap (\i t -> button ([onClick <| ChooseVote i] ++ [disabled <| withDefault False <| Maybe.map ((/=) i) model.votedNum]) [text t]) model.votes
       False ->
-        [input [onInput Password] [], button [onClick (Send <| encodeOutMsg <| Connecting model.password)] [text "connect"]]
+        [input [onInput Password] [], button [onClick <| Connect model.password] [text "connect"]]
 
 
 viewMessage : String -> Html msg
