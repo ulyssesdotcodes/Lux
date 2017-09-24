@@ -106,48 +106,29 @@ subscriptions model =
 
 -- VIEW
 
-styleTag : Html Msg
-styleTag =
-  let
-    styles =
-      """
-button {
-  -webkit-border-radius: 6;
-  -moz-border-radius: 6;
-  border-radius: 6px;
-  font-family: Courier New;
-  color: #000000;
-  font-size: 20px;
-  background: #ffffff;
-  padding: 10px 20px 10px 20px;
-  border: solid #ff7373 2px;
-  text-decoration: none;
-}
-
-button:hover {
-  background: #546ff2;
-  text-decoration: none;
-}
-      """
-  in
-    node "style" [] [text styles]
-
 view : Model -> Html Msg
 view model =
   div [] <|
-    [ styleTag
-    , div [] (List.map viewMessage model.messages)
-    , button [onClick (Send <| encodeOutMsg Reset)] [text "Reset"]
-    , button [onClick (Send <| encodeOutMsg KitchenScene)] [text "Kitchen Scene"]
-    , button [onClick (Send <| encodeOutMsg MainReel)] [text "MainReel"]
-    , button [onClick (Send <| encodeOutMsg <| OffsetTime (-10))] [text "RW"]
-    , button [onClick (Send <| encodeOutMsg <| OffsetTime 10)] [text "FFW"]
-    , button [onClick (Send <| encodeOutMsg <| NextVote Film [6, 7, 8] )] [text "Aspect ratios"]
-    , button [onClick (Send <| encodeOutMsg <| NextVote Show [0, 1, 2] )] [text "Show Vote 1"]
-    , button [onClick (Send <| encodeOutMsg <| NextVote Film [1, 2, 3, 4, 9] )] [text "Film Vote 1"]
-    , button [onClick (Send <| encodeOutMsg <| NextVote Show [2, 1, 0] )] [text "Show Vote 2"]
-    , button [onClick (Send <| encodeOutMsg <| NextVote Film [1, 2, 3, 4, 5, 9] )] [text "Film Vote 2"]
-    , button [onClick (Send <| encodeOutMsg <| NextVote Film [6, 7, 8] )] [text "Aspect ratios"]
+    [ div [] (List.map viewMessage model.messages)
+    , div [class "controls"]
+      [ div [class "control-group"]
+        [ button [onClick (Send <| encodeOutMsg Reset)] [text "Reset"]
+        , button [onClick (Send <| encodeOutMsg <| OffsetTime (-10))] [text "RW"]
+        , button [onClick (Send <| encodeOutMsg <| OffsetTime 10)] [text "FFW"]
+        ]
+      , div [class "control-group"]
+        [ button [onClick (Send <| encodeOutMsg KitchenScene)] [text "Kitchen Scene"]
+        , button [onClick (Send <| encodeOutMsg MainReel)] [text "MainReel"]
+        ]
+      , div [class "control-group"]
+        [ button [onClick (Send <| encodeOutMsg <| NextVote Show [0, 1, 2] )] [text "Show Vote 1"]
+        , button [onClick (Send <| encodeOutMsg <| NextVote Show [2, 1, 0] )] [text "Show Vote 2"]
+        ]
+      , div [class "control-group"]
+        [ button [onClick (Send <| encodeOutMsg <| NextVote Film [1, 2, 3, 4, 6, 7, 8, 9] )] [text "Film Vote 1"]
+        , button [onClick (Send <| encodeOutMsg <| NextVote Film [1, 2, 3, 4, 5, 6, 9] )] [text "Film Vote 2"]
+        ]
+      ]
     ] ++ indexedMap (\i t -> p [] [text t]) model.votes
 
 

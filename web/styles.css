@@ -1,0 +1,36 @@
+button {
+    -webkit-border-radius: 6;
+    -moz-border-radius: 6;
+    border-radius: 6px;
+    font-family: Courier New;
+    color: #000000;
+    font-size: 20px;
+    background: #ffffff;
+    padding: 10px 20px 10px 20px;
+    border: solid #ff7373 2px;
+    text-decoration: none;
+}
+
+button:hover, button:active {
+    background: #546ff2;
+    text-decoration: none;
+}
+
+button:disabled {
+    background: #cccccc;
+}
+
+.controls button {
+    padding: 4px 8px 4px 8px;
+    font-size: 16px;
+}
+
+.controls {
+    display: flex;
+    flex-direction: row;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+}

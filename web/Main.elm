@@ -119,39 +119,9 @@ subscriptions model =
 
 -- VIEW
 
-styleTag : Html Msg
-styleTag =
-  let
-    styles =
-      """
-button {
-  -webkit-border-radius: 6;
-  -moz-border-radius: 6;
-  border-radius: 6px;
-  font-family: Courier New;
-  color: #000000;
-  font-size: 20px;
-  background: #ffffff;
-  padding: 10px 20px 10px 20px;
-  border: solid #ff7373 2px;
-  text-decoration: none;
-}
-
-button:hover, button:active {
-  background: #546ff2;
-  text-decoration: none;
-}
-
-button:disabled {
-  background: #cccccc;
-}
-      """
-  in
-    node "style" [] [text styles]
-
 view : Model -> Html Msg
 view model =
-  div [] <| [styleTag] ++
+  div [] <| [] ++
     case model.connected of
       True -> indexedMap (\i t -> button ([onClick <| ChooseVote i] ++ [disabled <| withDefault False <| Maybe.map ((/=) i) model.votedNum]) [text t]) model.votes
       False ->
