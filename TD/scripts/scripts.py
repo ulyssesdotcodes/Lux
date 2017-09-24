@@ -86,6 +86,8 @@ classes = {
   'base' : (baseCOMP, 'base', 'COMP')
 }
 
+commandOrderRev = ["start", "cuepulse", "initialize"]
+
 def getClass(opname, default):
   return classes.get(opname, default)
 
@@ -137,8 +139,11 @@ def apply(newState):
     elif splits[1] == 'text':
       op(getName(splits[0])).text = diffi[2][1]
 
-    elif splits[1] == 'commands' and diffi[0] == 'add':
-      runCommand(op(getName(splits[0])), diffi[2][0][1]['command'], diffi[2][0][1]['args'])
+  for key, val in state.items():
+    if 'commands' in val:
+      commands = sorted(val['commands'], key=lambda x: commandOrderRev.index(x['args'][0]) if x['command']=='pulse' and x['args'][0] in commandOrderRev else -1, reverse=True)
+      for command in commands:
+        runCommand(op(getName(key)), command['command'], command['args'])
 
 
 def getName(name):
@@ -178,11 +183,6 @@ def addChange(key, value):
 
     for k,v in pars:
       addParameter(newOp, k, v)
-
-  if 'commands' in value:
-    coms = value['commands']
-    for comm in coms:
-      runCommand(newOp, comm['command'], comm['args'])
 
   if 'text' in value and value['text'] != None:
     newOp.text = value['text']
@@ -248,15 +248,16 @@ def addParameter(newOp, name, value):
     newOp.par.loadonstartpulse.pulse()
 
 def runCommand(newOp, command, args):
-    if command == "pulse":
-      pars = newOp.pars(args[0])
-      if len(pars) > 0:
-        if isfloat(args[1]):
-          pars[0].pulse(float(args[1]), frames=float(args[2]))
-        else:
-          pars[0].pulse(args[1])
-    elif command == "store":
-      newOp.store(args[0], args[1])
+  print(str(args))
+  if command == "pulse":
+    pars = newOp.pars(args[0])
+    if len(pars) > 0:
+      if isfloat(args[1]):
+        pars[0].pulse(float(args[1]), frames=int(args[2]))
+      else:
+        pars[0].pulse(args[1], frames=int(args[2]))
+  elif command == "store":
+    newOp.store(args[0], args[1])
 
 def isfloat(value):
   try:

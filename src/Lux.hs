@@ -97,14 +97,16 @@ data TDState = TDState { _activeVotes :: ActiveVotes
                        , _effects :: [ Effect ]
                        , _audioTrack :: Maybe BS.ByteString
                        , _inCamera :: Int
+                       , _resetMovie :: Bool
                        , _rlist :: [Float]
                        }
 
-data MovieData = MovieData { movieFile :: TDState -> String
-                           , movieLength :: Float
-                           , movieCycle :: Bool
-                           , movieEffects :: Bool
-                           , movieTimeOffset :: Float
+data MovieData = MovieData { _movieId :: Int
+                           , _movieFile :: TDState -> String
+                           , _movieLength :: Float
+                           , _movieCycle :: Bool
+                           , _movieEffects :: Bool
+                           , _movieTimeOffset :: Float
                            }
 
 data DeckIndex = Left | Right deriving (Show, Eq)
@@ -134,13 +136,14 @@ data ActiveVotes = ShowVotes [ (ShowVote, Int) ]
                  | NoVotes
 
 
+makeLenses ''MovieData
 makeLenses ''TDState
 makeLenses ''ServerState
 
 instance Show TDState where
   show td@(TDState {_activeVotes, _filmVotePool, _lastVoteWinner, _movie, _effects, _audioTrack}) =
     "activeVotes=" ++ (show $ activeVoteTexts _activeVotes) ++ " lastVoteWinner=" ++ show _lastVoteWinner ++
-    " movie" ++ show (movieFile _movie td) ++ " audioTrack" ++ show _audioTrack
+    " movie" ++ show (_movieFile _movie td) ++ " audioTrack" ++ show _audioTrack
 
 instance Vote FilmVote where
   run (FilmVote _ (InCamera e)) td = td & inCamera .~ e -- TODO: change to + when we have video
@@ -179,7 +182,7 @@ newServerState :: TOPRunner -> IO ServerState
 newServerState tr = newTDState >>= pure . ServerState [] tr "password"
 
 newTDState :: IO TDState
-newTDState = newStdGen >>= pure . TDState NoVotes filmVotes Nothing Nothing (films ! 0) [] Nothing 0 . randoms
+newTDState = newStdGen >>= pure . TDState NoVotes filmVotes Nothing Nothing (films ! 0) [] Nothing 0 False . randoms
 
 filmVotes :: Map Int FilmVote
 filmVotes = M.fromList [ (1, FilmVote (VoteText ("Six foot Orange", "SFO")) (InCamera 2))
@@ -194,9 +197,9 @@ filmVotes = M.fromList [ (1, FilmVote (VoteText ("Six foot Orange", "SFO")) (InC
                       ]
 
 films :: Map Int MovieData
-films = M.fromList [ (0, MovieData (printf "Holme/%05b.mov" . _inCamera) 1357 False True 0)
-                   , (1, MovieData (const "Holme/hlme000ac_hap.mov") 10 False False 0)
-                   , (2, MovieData (const "Holme/hlme000d_hap.mov") 10 False False 0)
+films = M.fromList [ (0, MovieData 0 (printf "Holme/%05b.mov" . _inCamera) 1357 False True 0)
+                   , (1, MovieData 1 (const "Holme/hlme000ac_hap.mov") 10 False False 0)
+                   , (2, MovieData 2 (const "Holme/hlme000d_hap.mov") 10 False False 0)
                    ]
 
 audios :: Map Int BS.ByteString
@@ -231,13 +234,13 @@ loop count = do
   loop count
 
 renderTDState :: TDState -> (Tree TOP, Tree CHOP)
-renderTDState td@(TDState {_activeVotes, _lastVoteWinner, _voteTimer, _movie, _effects, _audioTrack}) =
+renderTDState td@(TDState {_activeVotes, _lastVoteWinner, _voteTimer, _movie, _effects, _audioTrack, _resetMovie}) =
   (outT $ compT 0
   $ zipWith renderVote [0..] votes
   ++ maybeToList (resText . (++) "Last vote: " . unpack . snd . voteNames <$> _lastVoteWinner)
   ++ maybeToList (fmap (resTexts . caststr . LD.floor)
                   $ (!*) . msToF
-                  <*> ((!+) (float 1) . (!*) (float (-1))) . chopChanName "timer_fraction" . (timerS' (timerStart .~ True)) . msToF
+                  <*> ((!+) (float 1) . (!*) (float (-1))) . chopChanName "timer_fraction" . (timerS' (timerStart .~ _resetMovie)) . msToF
                   <$> _voteTimer)
   ++ [ mv _movie & (foldl (.) id _effects) ]
   , audioDevOut' (audioDevOutVolume ?~ float 0.3) $
@@ -250,8 +253,8 @@ renderTDState td@(TDState {_activeVotes, _lastVoteWinner, _voteTimer, _movie, _e
       (resText .  (flip (++) $ show tally) . unpack $ voteName)
       & transformT' (transformTranslate .~ (Nothing, Just . float $ (1 - 0.33 * (fromIntegral $ idx) - 0.66)))
     msToF = float . (flip (/) 1000.0) . fromIntegral
-    mv mf = movieFileIn' ((moviePlayMode ?~ int 0) . ((?~) movieIndex $ casti . mvtimer $ mf)) . str $ movieFile mf td
-    mvtimer mvd = (float $ 60 * movieTimeOffset mvd) !+ (chopChan0 $ timerS' ((timerCount ?~ int 2) . (timerShowFraction ?~ bool False) . (timerStart .~ True) . (timerCycle ?~ bool (movieCycle mvd)) . (timerCycleLimit ?~ bool (movieCycle mvd))) (float $ movieLength mvd - movieTimeOffset mvd))
+    mv mf = movieFileIn' ((moviePlayMode ?~ int 0) . ((?~) movieIndex $ casti . mvtimer $ mf)) . str $ (mf ^. movieFile) td
+    mvtimer (MovieData{_movieTimeOffset, _movieFile, _movieCycle, _movieLength}) = (float $ 60 * _movieTimeOffset) !+ (chopChan0 $ timerS' ((timerCount ?~ int 2) . (timerShowFraction ?~ bool False) . (timerStart .~ _resetMovie) . (timerCycle ?~ bool (_movieCycle)) . (timerCycleLimit ?~ bool (_movieCycle)) . (timerCue .~ (traceShowId $ _resetMovie))) (float $ _movieLength - _movieTimeOffset))
     votes =
       case _activeVotes of
         (ShowVotes vs) -> vs & traverse . _1 %~ (fst . voteNames . voteText)
@@ -263,8 +266,10 @@ resTexts = textT' (topResolution .~ iv2 (1920, 1080))
 
 modifyTDState :: (TDState -> TDState) -> MVar ServerState -> IO ()
 modifyTDState f state = do
-  s <- modifyMVar state $ (\s -> return (s, s)) . (tdState %~ f)
-  s ^. runner $ renderTDState $ traceShowId $ s ^. tdState
+  s <- takeMVar state
+  let s' = s & tdState %~ ((\tdp -> tdp & resetMovie .~ ((s ^. tdState . movie . movieId) /= (tdp ^. movie . movieId))) . f)
+  putMVar state s'
+  s ^. runner $ renderTDState $ s' ^. tdState
   let tdVal g = s ^. tdState . g
   broadcast (VotesMsg . fmap (fst . voteNames) . activeVoteTexts $ tdVal activeVotes) $ s ^. clients
 
@@ -287,7 +292,6 @@ application state pending = do
     (Just (Connecting ps)) ->
       if (traceShowId ps) == (traceShowId $ mstate ^. password) then
         flip finally disconnect $ do
-          putStrLn "here"
           WS.sendTextData conn (encode $ PasswordResult True)
           liftIO $ modifyMVar_ state $ pure . (clients %~ ((:) (id, conn)))
           receive conn state (id, conn)
@@ -351,7 +355,7 @@ changeReel :: Int -> TDState -> TDState
 changeReel id = movie .~ films ! id
 
 changeTime :: Float -> TDState -> TDState
-changeTime dt = movie %~ (\(MovieData f l c e t) -> MovieData f l c e (t + dt))
+changeTime dt = movie %~ (\(MovieData i f l c e t) -> MovieData i f l c e (t + dt))
 
 backsaw :: Int -> [Int]
 backsaw n = [n - 1, n - 2 .. 0]
