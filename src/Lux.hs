@@ -62,6 +62,7 @@ data Message = Connecting Text
   | Reset
   | KitchenScene
   | MainReel
+  | Opera Int
   | OffsetTime Float
   -- Triger(movie,lux,etc), GotoTime,
 
@@ -78,6 +79,7 @@ instance FromJSON Message where
       "offsetTime" -> OffsetTime <$> o .: "timeOffset"
       "kitchenScene" -> return KitchenScene
       "mainReel" -> return MainReel
+      "opera" -> Opera <$> o .: "version"
       "reset" -> return Reset
       _ -> fail ("Unknown type " ++ ty)
 
@@ -146,7 +148,7 @@ instance Show TDState where
     " movie" ++ show (_movieFile _movie td) ++ " audioTrack" ++ show _audioTrack
 
 instance Vote FilmVote where
-  run (FilmVote _ (InCamera e)) td = td & inCamera .~ e -- TODO: change to + when we have video
+  run (FilmVote _ (InCamera e)) td = td & inCamera +~ e
   run (FilmVote _ (Audio file)) td = td & audioTrack ?~ audios ! file
   run (FilmVote _ (Effect eff)) td = td & effects %~ (eff:)
   voteText (FilmVote vt _) = vt
@@ -194,12 +196,17 @@ filmVotes = M.fromList [ (1, FilmVote (VoteText ("Six foot Orange", "SFO")) (InC
                       , (7, FilmVote (VoteText ("Cinescope", "C")) (Effect $ glslTP' id "scripts/crop.glsl" [("uAspectRatio", emptyV4 & _1 ?~ float 2.35)] . (:[])))
                       , (8, FilmVote (VoteText ("Imax", "I")) (Effect $ glslTP' id "scripts/crop.glsl" [("uAspectRatio", emptyV4 & _1 ?~ float 1.43)] . (:[])))
                       , (9, FilmVote (VoteText ("Artistic Significance", "AS")) (InCamera 8))
+                      , (10, FilmVote (VoteText ("Webcam", "W")) (Effect $ compT 0 . (vidIn:) . (:[])))
+                      , (11, FilmVote (VoteText ("Roller skates", "RS")) (InCamera 1))
+                      , (12, FilmVote (VoteText ("Space Opera", "SO")) (InCamera 16))
                       ]
 
 films :: Map Int MovieData
 films = M.fromList [ (0, MovieData 0 (printf "Holme/%05b.mov" . _inCamera) 1357 False True 0)
-                   , (1, MovieData 1 (const "Holme/hlme000ac_hap.mov") 10 False False 0)
-                   , (2, MovieData 2 (const "Holme/hlme000d_hap.mov") 10 False False 0)
+                   , (1, MovieData 1 (const "Holme/kitchen_scene.mov") 600 False False 0)
+                   , (2, MovieData 2 (const "Holme/opera_1.mov") 600 False False 0)
+                   , (3, MovieData 3 (const "Holme/opera_2.mov") 600 False False 0)
+                   , (4, MovieData 4 (const "Holme/opera_3.mov") 600 False False 0)
                    ]
 
 audios :: Map Int BS.ByteString
@@ -233,7 +240,7 @@ loop count = do
   atomically $ modifyTVar count (+1)
   loop count
 
-renderTDState :: TDState -> (Tree TOP, Tree CHOP)
+
 renderTDState td@(TDState {_activeVotes, _lastVoteWinner, _voteTimer, _movie, _effects, _audioTrack, _resetMovie}) =
   (outT $ compT 0
   $ zipWith renderVote [0..] votes
@@ -270,7 +277,7 @@ modifyTDState f state = do
   let s' = s & tdState %~ ((\tdp -> tdp & resetMovie .~ ((s ^. tdState . movie . movieId) /= (tdp ^. movie . movieId))) . f)
   putMVar state s'
   s ^. runner $ renderTDState $ s' ^. tdState
-  let tdVal g = s ^. tdState . g
+  let tdVal g = s' ^. tdState . g
   broadcast (VotesMsg . fmap (fst . voteNames) . activeVoteTexts $ tdVal activeVotes) $ s ^. clients
 
 -- Server
@@ -314,6 +321,7 @@ receive conn state (id, _) = do
       (Just (Connecting ps)) -> putStrLn "Connecting twice?"
       (Just MainReel) -> modifyTDState (changeReel 0) state
       (Just KitchenScene) -> modifyTDState (changeReel 1) state
+      (Just (Opera i)) -> modifyTDState (changeReel (i + 2)) state
       (Just (OffsetTime t)) -> modifyTDState (changeTime t) state
       Nothing -> putStrLn "Unrecognized message"
   wait thr

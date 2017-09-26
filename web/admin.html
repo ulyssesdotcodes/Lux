@@ -9769,18 +9769,6 @@ var _user$project$Main$viewMessage = function (msg) {
 			_1: {ctor: '[]'}
 		});
 };
-var _user$project$Main$styleTag = function () {
-	var styles = '\nbutton {\n  -webkit-border-radius: 6;\n  -moz-border-radius: 6;\n  border-radius: 6px;\n  font-family: Courier New;\n  color: #000000;\n  font-size: 20px;\n  background: #ffffff;\n  padding: 10px 20px 10px 20px;\n  border: solid #ff7373 2px;\n  text-decoration: none;\n}\n\nbutton:hover {\n  background: #546ff2;\n  text-decoration: none;\n}\n      ';
-	return A3(
-		_elm_lang$html$Html$node,
-		'style',
-		{ctor: '[]'},
-		{
-			ctor: '::',
-			_0: _elm_lang$html$Html$text(styles),
-			_1: {ctor: '[]'}
-		});
-}();
 var _user$project$Main$wsloc = function (loc) {
 	return A2(
 		_elm_lang$core$Basics_ops['++'],
@@ -9881,6 +9869,25 @@ var _user$project$Main$encodeOutMsg = function (msg) {
 							},
 							_1: {ctor: '[]'}
 						});
+				case 'Opera':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('opera')
+							},
+							_1: {
+								ctor: '::',
+								_0: {
+									ctor: '_Tuple2',
+									_0: 'version',
+									_1: _elm_lang$core$Json_Encode$int(_p1._0)
+								},
+								_1: {ctor: '[]'}
+							}
+						});
 				default:
 					return _elm_lang$core$Json_Encode$object(
 						{
@@ -9909,6 +9916,9 @@ var _user$project$Main$Model = F4(
 	});
 var _user$project$Main$OffsetTime = function (a) {
 	return {ctor: 'OffsetTime', _0: a};
+};
+var _user$project$Main$Opera = function (a) {
+	return {ctor: 'Opera', _0: a};
 };
 var _user$project$Main$MainReel = {ctor: 'MainReel'};
 var _user$project$Main$KitchenScene = {ctor: 'KitchenScene'};
@@ -10052,62 +10062,29 @@ var _user$project$Main$view = function (model) {
 			_elm_lang$core$Basics_ops['++'],
 			{
 				ctor: '::',
-				_0: _user$project$Main$styleTag,
+				_0: A2(
+					_elm_lang$html$Html$div,
+					{ctor: '[]'},
+					A2(_elm_lang$core$List$map, _user$project$Main$viewMessage, model.messages)),
 				_1: {
 					ctor: '::',
 					_0: A2(
 						_elm_lang$html$Html$div,
-						{ctor: '[]'},
-						A2(_elm_lang$core$List$map, _user$project$Main$viewMessage, model.messages)),
-					_1: {
-						ctor: '::',
-						_0: A2(
-							_elm_lang$html$Html$button,
-							{
-								ctor: '::',
-								_0: _elm_lang$html$Html_Events$onClick(
-									_user$project$Main$Send(
-										_user$project$Main$encodeOutMsg(_user$project$Main$Reset))),
-								_1: {ctor: '[]'}
-							},
-							{
-								ctor: '::',
-								_0: _elm_lang$html$Html$text('Reset'),
-								_1: {ctor: '[]'}
-							}),
-						_1: {
+						{
+							ctor: '::',
+							_0: _elm_lang$html$Html_Attributes$class('controls'),
+							_1: {ctor: '[]'}
+						},
+						{
 							ctor: '::',
 							_0: A2(
-								_elm_lang$html$Html$button,
+								_elm_lang$html$Html$div,
 								{
 									ctor: '::',
-									_0: _elm_lang$html$Html_Events$onClick(
-										_user$project$Main$Send(
-											_user$project$Main$encodeOutMsg(_user$project$Main$KitchenScene))),
+									_0: _elm_lang$html$Html_Attributes$class('control-group'),
 									_1: {ctor: '[]'}
 								},
 								{
-									ctor: '::',
-									_0: _elm_lang$html$Html$text('Kitchen Scene'),
-									_1: {ctor: '[]'}
-								}),
-							_1: {
-								ctor: '::',
-								_0: A2(
-									_elm_lang$html$Html$button,
-									{
-										ctor: '::',
-										_0: _elm_lang$html$Html_Events$onClick(
-											_user$project$Main$Send(
-												_user$project$Main$encodeOutMsg(_user$project$Main$MainReel))),
-										_1: {ctor: '[]'}
-									},
-									{
-										ctor: '::',
-										_0: _elm_lang$html$Html$text('MainReel'),
-										_1: {ctor: '[]'}
-									}),
-								_1: {
 									ctor: '::',
 									_0: A2(
 										_elm_lang$html$Html$button,
@@ -10115,13 +10092,12 @@ var _user$project$Main$view = function (model) {
 											ctor: '::',
 											_0: _elm_lang$html$Html_Events$onClick(
 												_user$project$Main$Send(
-													_user$project$Main$encodeOutMsg(
-														_user$project$Main$OffsetTime(-10)))),
+													_user$project$Main$encodeOutMsg(_user$project$Main$Reset))),
 											_1: {ctor: '[]'}
 										},
 										{
 											ctor: '::',
-											_0: _elm_lang$html$Html$text('RW'),
+											_0: _elm_lang$html$Html$text('Reset'),
 											_1: {ctor: '[]'}
 										}),
 									_1: {
@@ -10133,12 +10109,12 @@ var _user$project$Main$view = function (model) {
 												_0: _elm_lang$html$Html_Events$onClick(
 													_user$project$Main$Send(
 														_user$project$Main$encodeOutMsg(
-															_user$project$Main$OffsetTime(10)))),
+															_user$project$Main$OffsetTime(-10)))),
 												_1: {ctor: '[]'}
 											},
 											{
 												ctor: '::',
-												_0: _elm_lang$html$Html$text('FFW'),
+												_0: _elm_lang$html$Html$text('RW'),
 												_1: {ctor: '[]'}
 											}),
 										_1: {
@@ -10150,18 +10126,146 @@ var _user$project$Main$view = function (model) {
 													_0: _elm_lang$html$Html_Events$onClick(
 														_user$project$Main$Send(
 															_user$project$Main$encodeOutMsg(
+																_user$project$Main$OffsetTime(10)))),
+													_1: {ctor: '[]'}
+												},
+												{
+													ctor: '::',
+													_0: _elm_lang$html$Html$text('FFW'),
+													_1: {ctor: '[]'}
+												}),
+											_1: {ctor: '[]'}
+										}
+									}
+								}),
+							_1: {
+								ctor: '::',
+								_0: A2(
+									_elm_lang$html$Html$div,
+									{
+										ctor: '::',
+										_0: _elm_lang$html$Html_Attributes$class('control-group'),
+										_1: {ctor: '[]'}
+									},
+									{
+										ctor: '::',
+										_0: A2(
+											_elm_lang$html$Html$button,
+											{
+												ctor: '::',
+												_0: _elm_lang$html$Html_Events$onClick(
+													_user$project$Main$Send(
+														_user$project$Main$encodeOutMsg(_user$project$Main$MainReel))),
+												_1: {ctor: '[]'}
+											},
+											{
+												ctor: '::',
+												_0: _elm_lang$html$Html$text('MainReel'),
+												_1: {ctor: '[]'}
+											}),
+										_1: {
+											ctor: '::',
+											_0: A2(
+												_elm_lang$html$Html$button,
+												{
+													ctor: '::',
+													_0: _elm_lang$html$Html_Events$onClick(
+														_user$project$Main$Send(
+															_user$project$Main$encodeOutMsg(_user$project$Main$KitchenScene))),
+													_1: {ctor: '[]'}
+												},
+												{
+													ctor: '::',
+													_0: _elm_lang$html$Html$text('Kitchen Scene'),
+													_1: {ctor: '[]'}
+												}),
+											_1: {
+												ctor: '::',
+												_0: A2(
+													_elm_lang$html$Html$button,
+													{
+														ctor: '::',
+														_0: _elm_lang$html$Html_Events$onClick(
+															_user$project$Main$Send(
+																_user$project$Main$encodeOutMsg(
+																	_user$project$Main$Opera(0)))),
+														_1: {ctor: '[]'}
+													},
+													{
+														ctor: '::',
+														_0: _elm_lang$html$Html$text('Opera 1'),
+														_1: {ctor: '[]'}
+													}),
+												_1: {
+													ctor: '::',
+													_0: A2(
+														_elm_lang$html$Html$button,
+														{
+															ctor: '::',
+															_0: _elm_lang$html$Html_Events$onClick(
+																_user$project$Main$Send(
+																	_user$project$Main$encodeOutMsg(
+																		_user$project$Main$Opera(1)))),
+															_1: {ctor: '[]'}
+														},
+														{
+															ctor: '::',
+															_0: _elm_lang$html$Html$text('Opera 2'),
+															_1: {ctor: '[]'}
+														}),
+													_1: {
+														ctor: '::',
+														_0: A2(
+															_elm_lang$html$Html$button,
+															{
+																ctor: '::',
+																_0: _elm_lang$html$Html_Events$onClick(
+																	_user$project$Main$Send(
+																		_user$project$Main$encodeOutMsg(
+																			_user$project$Main$Opera(2)))),
+																_1: {ctor: '[]'}
+															},
+															{
+																ctor: '::',
+																_0: _elm_lang$html$Html$text('Opera 3'),
+																_1: {ctor: '[]'}
+															}),
+														_1: {ctor: '[]'}
+													}
+												}
+											}
+										}
+									}),
+								_1: {
+									ctor: '::',
+									_0: A2(
+										_elm_lang$html$Html$div,
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html_Attributes$class('control-group'),
+											_1: {ctor: '[]'}
+										},
+										{
+											ctor: '::',
+											_0: A2(
+												_elm_lang$html$Html$button,
+												{
+													ctor: '::',
+													_0: _elm_lang$html$Html_Events$onClick(
+														_user$project$Main$Send(
+															_user$project$Main$encodeOutMsg(
 																A2(
 																	_user$project$Main$NextVote,
-																	_user$project$Main$Film,
+																	_user$project$Main$Show,
 																	{
 																		ctor: '::',
-																		_0: 6,
+																		_0: 0,
 																		_1: {
 																			ctor: '::',
-																			_0: 7,
+																			_0: 1,
 																			_1: {
 																				ctor: '::',
-																				_0: 8,
+																				_0: 2,
 																				_1: {ctor: '[]'}
 																			}
 																		}
@@ -10170,7 +10274,7 @@ var _user$project$Main$view = function (model) {
 												},
 												{
 													ctor: '::',
-													_0: _elm_lang$html$Html$text('Aspect ratios'),
+													_0: _elm_lang$html$Html$text('Show Vote 1'),
 													_1: {ctor: '[]'}
 												}),
 											_1: {
@@ -10187,13 +10291,13 @@ var _user$project$Main$view = function (model) {
 																		_user$project$Main$Show,
 																		{
 																			ctor: '::',
-																			_0: 0,
+																			_0: 2,
 																			_1: {
 																				ctor: '::',
 																				_0: 1,
 																				_1: {
 																					ctor: '::',
-																					_0: 2,
+																					_0: 0,
 																					_1: {ctor: '[]'}
 																				}
 																			}
@@ -10202,7 +10306,79 @@ var _user$project$Main$view = function (model) {
 													},
 													{
 														ctor: '::',
-														_0: _elm_lang$html$Html$text('Show Vote 1'),
+														_0: _elm_lang$html$Html$text('Show Vote 2'),
+														_1: {ctor: '[]'}
+													}),
+												_1: {ctor: '[]'}
+											}
+										}),
+									_1: {
+										ctor: '::',
+										_0: A2(
+											_elm_lang$html$Html$div,
+											{
+												ctor: '::',
+												_0: _elm_lang$html$Html_Attributes$class('control-group'),
+												_1: {ctor: '[]'}
+											},
+											{
+												ctor: '::',
+												_0: A2(
+													_elm_lang$html$Html$button,
+													{
+														ctor: '::',
+														_0: _elm_lang$html$Html_Events$onClick(
+															_user$project$Main$Send(
+																_user$project$Main$encodeOutMsg(
+																	A2(
+																		_user$project$Main$NextVote,
+																		_user$project$Main$Film,
+																		{
+																			ctor: '::',
+																			_0: 1,
+																			_1: {
+																				ctor: '::',
+																				_0: 2,
+																				_1: {
+																					ctor: '::',
+																					_0: 3,
+																					_1: {
+																						ctor: '::',
+																						_0: 4,
+																						_1: {
+																							ctor: '::',
+																							_0: 6,
+																							_1: {
+																								ctor: '::',
+																								_0: 7,
+																								_1: {
+																									ctor: '::',
+																									_0: 8,
+																									_1: {
+																										ctor: '::',
+																										_0: 9,
+																										_1: {
+																											ctor: '::',
+																											_0: 11,
+																											_1: {
+																												ctor: '::',
+																												_0: 12,
+																												_1: {ctor: '[]'}
+																											}
+																										}
+																									}
+																								}
+																							}
+																						}
+																					}
+																				}
+																			}
+																		})))),
+														_1: {ctor: '[]'}
+													},
+													{
+														ctor: '::',
+														_0: _elm_lang$html$Html$text('Film Vote 1'),
 														_1: {ctor: '[]'}
 													}),
 												_1: {
@@ -10231,8 +10407,16 @@ var _user$project$Main$view = function (model) {
 																							_0: 4,
 																							_1: {
 																								ctor: '::',
-																								_0: 9,
-																								_1: {ctor: '[]'}
+																								_0: 5,
+																								_1: {
+																									ctor: '::',
+																									_0: 6,
+																									_1: {
+																										ctor: '::',
+																										_0: 9,
+																										_1: {ctor: '[]'}
+																									}
+																								}
 																							}
 																						}
 																					}
@@ -10242,7 +10426,7 @@ var _user$project$Main$view = function (model) {
 														},
 														{
 															ctor: '::',
-															_0: _elm_lang$html$Html$text('Film Vote 1'),
+															_0: _elm_lang$html$Html$text('Film Vote 2'),
 															_1: {ctor: '[]'}
 														}),
 													_1: {
@@ -10256,17 +10440,21 @@ var _user$project$Main$view = function (model) {
 																		_user$project$Main$encodeOutMsg(
 																			A2(
 																				_user$project$Main$NextVote,
-																				_user$project$Main$Show,
+																				_user$project$Main$Film,
 																				{
 																					ctor: '::',
-																					_0: 2,
+																					_0: 1,
 																					_1: {
 																						ctor: '::',
-																						_0: 1,
+																						_0: 2,
 																						_1: {
 																							ctor: '::',
-																							_0: 0,
-																							_1: {ctor: '[]'}
+																							_0: 9,
+																							_1: {
+																								ctor: '::',
+																								_0: 11,
+																								_1: {ctor: '[]'}
+																							}
 																						}
 																					}
 																				})))),
@@ -10274,97 +10462,19 @@ var _user$project$Main$view = function (model) {
 															},
 															{
 																ctor: '::',
-																_0: _elm_lang$html$Html$text('Show Vote 2'),
+																_0: _elm_lang$html$Html$text('Permutations'),
 																_1: {ctor: '[]'}
 															}),
-														_1: {
-															ctor: '::',
-															_0: A2(
-																_elm_lang$html$Html$button,
-																{
-																	ctor: '::',
-																	_0: _elm_lang$html$Html_Events$onClick(
-																		_user$project$Main$Send(
-																			_user$project$Main$encodeOutMsg(
-																				A2(
-																					_user$project$Main$NextVote,
-																					_user$project$Main$Film,
-																					{
-																						ctor: '::',
-																						_0: 1,
-																						_1: {
-																							ctor: '::',
-																							_0: 2,
-																							_1: {
-																								ctor: '::',
-																								_0: 3,
-																								_1: {
-																									ctor: '::',
-																									_0: 4,
-																									_1: {
-																										ctor: '::',
-																										_0: 5,
-																										_1: {
-																											ctor: '::',
-																											_0: 9,
-																											_1: {ctor: '[]'}
-																										}
-																									}
-																								}
-																							}
-																						}
-																					})))),
-																	_1: {ctor: '[]'}
-																},
-																{
-																	ctor: '::',
-																	_0: _elm_lang$html$Html$text('Film Vote 2'),
-																	_1: {ctor: '[]'}
-																}),
-															_1: {
-																ctor: '::',
-																_0: A2(
-																	_elm_lang$html$Html$button,
-																	{
-																		ctor: '::',
-																		_0: _elm_lang$html$Html_Events$onClick(
-																			_user$project$Main$Send(
-																				_user$project$Main$encodeOutMsg(
-																					A2(
-																						_user$project$Main$NextVote,
-																						_user$project$Main$Film,
-																						{
-																							ctor: '::',
-																							_0: 6,
-																							_1: {
-																								ctor: '::',
-																								_0: 7,
-																								_1: {
-																									ctor: '::',
-																									_0: 8,
-																									_1: {ctor: '[]'}
-																								}
-																							}
-																						})))),
-																		_1: {ctor: '[]'}
-																	},
-																	{
-																		ctor: '::',
-																		_0: _elm_lang$html$Html$text('Aspect ratios'),
-																		_1: {ctor: '[]'}
-																	}),
-																_1: {ctor: '[]'}
-															}
-														}
+														_1: {ctor: '[]'}
 													}
 												}
-											}
-										}
+											}),
+										_1: {ctor: '[]'}
 									}
 								}
 							}
-						}
-					}
+						}),
+					_1: {ctor: '[]'}
 				}
 			},
 			A2(
