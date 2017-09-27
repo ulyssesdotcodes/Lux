@@ -202,10 +202,10 @@ filmVotes = M.fromList [ (1, FilmVote (VoteText ("Six foot Orange", "SFO")) (InC
                       , (10, FilmVote (VoteText ("Webcam", "W")) (Effect $ compT 0 . (vidIn:) . (:[])))
                       , (11, FilmVote (VoteText ("Roller skates", "RS")) (InCamera 1))
                       , (12, FilmVote (VoteText ("Space Opera", "SO")) (InCamera 16))
-                      , (13, FilmVote (VoteText ("3rd Grader", "3G")) (AltCamera 6))
-                      , (14, FilmVote (VoteText ("Fish cam", "FC")) (AltCamera 7))
-                      , (15, FilmVote (VoteText ("Chicken cam", "CC")) (AltCamera 8))
-                      , (16, FilmVote (VoteText ("Bottle Vision", "BV")) (AltCamera 5))
+                      , (13, FilmVote (VoteText ("3rd Grader", "3G")) (AltCamera 5))
+                      , (14, FilmVote (VoteText ("Fish cam", "FC")) (AltCamera 6))
+                      , (15, FilmVote (VoteText ("Chicken cam", "CC")) (AltCamera 7))
+                      , (16, FilmVote (VoteText ("Bottle Vision", "BV")) (AltCamera 8))
                       ]
 
 films :: Map Int MovieData
@@ -214,10 +214,10 @@ films = M.fromList [ (0, MovieData 0 (printf "Holme/%05b.mov" . _inCamera) 1357 
                    , (2, MovieData 2 (const "Holme/opera_1.mov") 600 False False 0)
                    , (3, MovieData 3 (const "Holme/opera_2.mov") 600 False False 0)
                    , (4, MovieData 4 (const "Holme/opera_3.mov") 600 False False 0)
-                   , (5, MovieData 5 (const "Holme/kitchen_scene.mov") 1357 False False 0)
-                   , (6, MovieData 6 (const "Holme/kitchen_scene.mov") 1357 False False 0)
-                   , (7, MovieData 7 (const "Holme/kitchen_scene.mov") 1357 False False 0)
-                   , (8, MovieData 8 (const "Holme/kitchen_scene.mov") 1357 False False 0)
+                   , (5, MovieData 5 (const "Holme/third_grader.mov") 1357 False False 0)
+                   , (6, MovieData 6 (const "Holme/fish_cam.mov") 1357 False False 0)
+                   , (7, MovieData 7 (const "Holme/chicken_cam.mov") 1357 False False 0)
+                   , (8, MovieData 8 (const "Holme/bottle_vision.mov") 1357 False False 0)
                    ]
 
 audios :: Map Int BS.ByteString
