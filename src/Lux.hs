@@ -96,6 +96,7 @@ data TDState = TDState { _activeVotes :: ActiveVotes
                        , _lastVoteWinner :: Maybe VoteText
                        , _voteTimer :: Maybe Int
                        , _movie :: MovieData
+                       , _altmovie :: Maybe MovieData
                        , _effects :: [ Effect ]
                        , _audioTrack :: Maybe BS.ByteString
                        , _inCamera :: Int
@@ -132,6 +133,7 @@ data FilmVote = FilmVote VoteText FilmData
 data FilmData = InCamera Int
               | Effect (Tree TOP -> Tree TOP)
               | Audio Int
+              | AltCamera Int
 
 data ActiveVotes = ShowVotes [ (ShowVote, Int) ]
                  | FilmVotes [ (Int, Int) ]
@@ -151,6 +153,7 @@ instance Vote FilmVote where
   run (FilmVote _ (InCamera e)) td = td & inCamera +~ e
   run (FilmVote _ (Audio file)) td = td & audioTrack ?~ audios ! file
   run (FilmVote _ (Effect eff)) td = td & effects %~ (eff:)
+  run (FilmVote _ (AltCamera id)) td = td & altmovie ?~ (films ! id)
   voteText (FilmVote vt _) = vt
 
 -- Vote is a
@@ -184,7 +187,7 @@ newServerState :: TOPRunner -> IO ServerState
 newServerState tr = newTDState >>= pure . ServerState [] tr "password"
 
 newTDState :: IO TDState
-newTDState = newStdGen >>= pure . TDState NoVotes filmVotes Nothing Nothing (films ! 0) [] Nothing 0 False . randoms
+newTDState = newStdGen >>= pure . TDState NoVotes filmVotes Nothing Nothing (films ! 0) Nothing [] Nothing 0 False . randoms
 
 filmVotes :: Map Int FilmVote
 filmVotes = M.fromList [ (1, FilmVote (VoteText ("Six foot Orange", "SFO")) (InCamera 2))
@@ -199,6 +202,10 @@ filmVotes = M.fromList [ (1, FilmVote (VoteText ("Six foot Orange", "SFO")) (InC
                       , (10, FilmVote (VoteText ("Webcam", "W")) (Effect $ compT 0 . (vidIn:) . (:[])))
                       , (11, FilmVote (VoteText ("Roller skates", "RS")) (InCamera 1))
                       , (12, FilmVote (VoteText ("Space Opera", "SO")) (InCamera 16))
+                      , (13, FilmVote (VoteText ("3rd Grader", "3G")) (AltCamera 6))
+                      , (14, FilmVote (VoteText ("Fish cam", "FC")) (AltCamera 7))
+                      , (15, FilmVote (VoteText ("Chicken cam", "CC")) (AltCamera 8))
+                      , (16, FilmVote (VoteText ("Bottle Vision", "BV")) (AltCamera 5))
                       ]
 
 films :: Map Int MovieData
@@ -207,6 +214,10 @@ films = M.fromList [ (0, MovieData 0 (printf "Holme/%05b.mov" . _inCamera) 1357 
                    , (2, MovieData 2 (const "Holme/opera_1.mov") 600 False False 0)
                    , (3, MovieData 3 (const "Holme/opera_2.mov") 600 False False 0)
                    , (4, MovieData 4 (const "Holme/opera_3.mov") 600 False False 0)
+                   , (5, MovieData 5 (const "Holme/kitchen_scene.mov") 1357 False False 0)
+                   , (6, MovieData 6 (const "Holme/kitchen_scene.mov") 1357 False False 0)
+                   , (7, MovieData 7 (const "Holme/kitchen_scene.mov") 1357 False False 0)
+                   , (8, MovieData 8 (const "Holme/kitchen_scene.mov") 1357 False False 0)
                    ]
 
 audios :: Map Int BS.ByteString
@@ -249,7 +260,7 @@ renderTDState td@(TDState {_activeVotes, _lastVoteWinner, _voteTimer, _movie, _e
                   $ (!*) . msToF
                   <*> ((!+) (float 1) . (!*) (float (-1))) . chopChanName "timer_fraction" . (timerS' (timerStart .~ _resetMovie)) . msToF
                   <$> _voteTimer)
-  ++ [ mv _movie & (foldl (.) id _effects) ]
+  ++ [ maybe (mv _movie) mv (_altmovie td) & (foldl (.) id _effects) ]
   , audioDevOut' (audioDevOutVolume ?~ float 0.3) $
     math' opsadd $
                   [ audioMovie (mv _movie)

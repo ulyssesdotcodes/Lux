@@ -132,6 +132,7 @@ view model =
         [ button [onClick (Send <| encodeOutMsg <| NextVote Film [1, 2, 3, 4, 6, 7, 8, 9, 11, 12] )] [text "Film Vote 1"]
         , button [onClick (Send <| encodeOutMsg <| NextVote Film [1, 2, 3, 4, 5, 6, 9] )] [text "Film Vote 2"]
         , button [onClick (Send <| encodeOutMsg <| NextVote Film [1, 2, 9, 11] )] [text "Permutations"]
+        , button [onClick (Send <| encodeOutMsg <| NextVote Film [13, 14, 15, 16] )] [text "Alt cameras"]
         ]
       ]
     ] ++ indexedMap (\i t -> p [] [text t]) model.votes
