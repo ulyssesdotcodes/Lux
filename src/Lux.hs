@@ -96,6 +96,7 @@ data TDState = TDState { _activeVotes :: ActiveVotes
                        , _lastVoteWinner :: Maybe VoteText
                        , _voteTimer :: Maybe Int
                        , _movie :: MovieData
+                       , _overlays :: [ MovieData ]
                        , _altmovie :: Maybe MovieData
                        , _effects :: [ Effect ]
                        , _audioTrack :: Maybe BS.ByteString
@@ -134,6 +135,7 @@ data FilmData = InCamera Int
               | Effect (Tree TOP -> Tree TOP)
               | Audio Int
               | AltCamera Int
+              | Overlay Int
 
 data ActiveVotes = ShowVotes [ (ShowVote, Int) ]
                  | FilmVotes [ (Int, Int) ]
@@ -154,11 +156,12 @@ instance Vote FilmVote where
   run (FilmVote _ (Audio file)) td = td & audioTrack ?~ audios ! file
   run (FilmVote _ (Effect eff)) td = td & effects %~ (eff:)
   run (FilmVote _ (AltCamera id)) td = td & altmovie ?~ (films ! id)
+  run (FilmVote _ (Overlay id)) td = td & overlays %~ ((films ! id):)
   voteText (FilmVote vt _) = vt
 
 -- Vote is a
 
--- Every vote: announcement that vote is up, voting update w/ countdown, 10 sec announcement, vote locked - loading vote audio, vote 
+-- Every vote: announcement that vote is up, voting update w/ countdown, 10 sec announcement, vote locked - loading vote audio, vote
 -- data VoteType =
 --   ShowVote -- [nothing, extra audio file, screen c video] votes are always the same 3 in the same order
 --   | FilmVote -- switch video files, adding effect, swap out of video audio (doesn't have to be sunken, but check if it can do it easily (timeline to timeline of show?)), 3 channels of audio (primary (can be switched to xyz), soundtrack, director comentary)
@@ -187,7 +190,7 @@ newServerState :: TOPRunner -> IO ServerState
 newServerState tr = newTDState >>= pure . ServerState [] tr "password"
 
 newTDState :: IO TDState
-newTDState = newStdGen >>= pure . TDState NoVotes filmVotes Nothing Nothing (films ! 0) Nothing [] Nothing 0 False . randoms
+newTDState = newStdGen >>= pure . TDState NoVotes filmVotes Nothing Nothing (films ! 0) [] Nothing [] Nothing 0 False . randoms
 
 filmVotes :: Map Int FilmVote
 filmVotes = M.fromList [ (1, FilmVote (VoteText ("Six foot Orange", "SFO")) (InCamera 2))
@@ -206,6 +209,8 @@ filmVotes = M.fromList [ (1, FilmVote (VoteText ("Six foot Orange", "SFO")) (InC
                       , (14, FilmVote (VoteText ("Fish cam", "FC")) (AltCamera 6))
                       , (15, FilmVote (VoteText ("Chicken cam", "CC")) (AltCamera 7))
                       , (16, FilmVote (VoteText ("Bottle Vision", "BV")) (AltCamera 8))
+                      , (17, FilmVote (VoteText ("Subtitles 1", "S1")) (Overlay 9))
+                      , (18, FilmVote (VoteText ("Subtitles 2", "S2")) (Overlay 10))
                       ]
 
 films :: Map Int MovieData
@@ -218,6 +223,11 @@ films = M.fromList [ (0, MovieData 0 (printf "Holme/%05b.mov" . _inCamera) 1357 
                    , (6, MovieData 6 (const "Holme/fish_cam.mov") 1357 False False 0)
                    , (7, MovieData 7 (const "Holme/chicken_cam.mov") 1357 False False 0)
                    , (8, MovieData 8 (const "Holme/bottle_vision.mov") 1357 False False 0)
+                   , (9, MovieData 9 (const "Holme/sub1.mov") 1357 False False 0)
+                   , (10, MovieData 10 (const "Holme/sub2.mov") 1357 False False 0)
+                   , (11, MovieData 11 (const "Holme/sub_3.mov") 1357 False False 0)
+                   , (12, MovieData 12 (const "Holme/mocap_man.mov") 1357 False False 0)
+                   , (13, MovieData 13 (const "Holme/subliminals.mov") 1357 False False 0)
                    ]
 
 audios :: Map Int BS.ByteString
@@ -252,15 +262,16 @@ loop count = do
   loop count
 
 
-renderTDState td@(TDState {_activeVotes, _lastVoteWinner, _voteTimer, _movie, _effects, _audioTrack, _resetMovie}) =
-  (outT $ compT 0
+renderTDState td@(TDState {_activeVotes, _lastVoteWinner, _voteTimer, _movie, _effects, _audioTrack, _resetMovie, _overlays}) =
+  (outT $ compT 31
   $ zipWith renderVote [0..] votes
   ++ maybeToList (resText . (++) "Last vote: " . unpack . snd . voteNames <$> _lastVoteWinner)
   ++ maybeToList (fmap (resTexts . caststr . LD.floor)
                   $ (!*) . msToF
                   <*> ((!+) (float 1) . (!*) (float (-1))) . chopChanName "timer_fraction" . (timerS' (timerStart .~ _resetMovie)) . msToF
                   <$> _voteTimer)
-  ++ [ maybe (mv _movie) mv (_altmovie td) & (foldl (.) id _effects) ]
+  ++ (mv <$> (if isMainReel then _overlays else []))
+  ++ [ (if isMainReel then maybe (mv _movie) mv (_altmovie td) else mv _movie) & (foldl (.) id $ if isMainReel then _effects else []) ]
   , audioDevOut' (audioDevOutVolume ?~ float 0.3) $
     math' opsadd $
                   [ audioMovie (mv _movie)
@@ -273,6 +284,7 @@ renderTDState td@(TDState {_activeVotes, _lastVoteWinner, _voteTimer, _movie, _e
     msToF = float . (flip (/) 1000.0) . fromIntegral
     mv mf = movieFileIn' ((moviePlayMode ?~ int 0) . ((?~) movieIndex $ casti . mvtimer $ mf)) . str $ (mf ^. movieFile) td
     mvtimer (MovieData{_movieTimeOffset, _movieFile, _movieCycle, _movieLength}) = (float $ 60 * _movieTimeOffset) !+ (chopChan0 $ timerS' ((timerCount ?~ int 2) . (timerShowFraction ?~ bool False) . (timerStart .~ _resetMovie) . (timerCycle ?~ bool (_movieCycle)) . (timerCycleLimit ?~ bool (_movieCycle)) . (timerCue .~ (traceShowId $ _resetMovie))) (float $ _movieLength - _movieTimeOffset))
+    isMainReel = (_movie ^. movieId) == 0
     votes =
       case _activeVotes of
         (ShowVotes vs) -> vs & traverse . _1 %~ (fst . voteNames . voteText)
