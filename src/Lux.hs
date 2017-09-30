@@ -263,16 +263,18 @@ loop count = do
 
 
 renderTDState td@(TDState {_activeVotes, _lastVoteWinner, _voteTimer, _movie, _effects, _audioTrack, _resetMovie, _overlays}) =
-  (outT $ compT 31
-  $ zipWith renderVote [0..] votes
-  ++ maybeToList (resText . (++) "Last vote: " . unpack . snd . voteNames <$> _lastVoteWinner)
-  ++ maybeToList (fmap (resTexts . caststr . LD.floor)
-                  $ (!*) . msToF
-                  <*> ((!+) (float 1) . (!*) (float (-1))) . chopChanName "timer_fraction" . (timerS' (timerStart .~ _resetMovie)) . msToF
-                  <$> _voteTimer)
-  ++ (mv <$> (if isMainReel then _overlays else []))
-  ++ [ (if isMainReel then maybe (mv _movie) mv (_altmovie td) else mv _movie) & (foldl (.) id $ if isMainReel then _effects else []) ]
-  , audioDevOut' (audioDevOutVolume ?~ float 0.3) $
+  (outT $ sidebyside [
+    compT 31 $ zipWith renderVote [0..] votes
+    ++ maybeToList (resText . (++) "Last vote: " . unpack . snd . voteNames <$> _lastVoteWinner)
+    ++ maybeToList (fmap (resTexts . caststr . LD.floor)
+                    $ (!*) . msToF
+                    <*> ((!+) (float 1) . (!*) (float (-1))) . chopChanName "timer_fraction" . (timerS' (timerStart .~ _resetMovie)) . msToF
+                    <$> _voteTimer)
+    , compT 31 $
+      (mv <$> (if isMainReel then _overlays else []))
+        ++ [ (if isMainReel then maybe (mv _movie) mv (_altmovie td) else mv _movie) & (foldl (.) id $ if isMainReel then _effects else []) ]
+    ]
+  , audioDevOut' (audioDevOutVolume ?~ float 0) $
     math' opsadd $
                   [ audioMovie (mv _movie)
                   ] ++ maybeToList (audioFileIn . str . BS.unpack <$> _audioTrack)
@@ -285,6 +287,7 @@ renderTDState td@(TDState {_activeVotes, _lastVoteWinner, _voteTimer, _movie, _e
     mv mf = movieFileIn' ((moviePlayMode ?~ int 0) . ((?~) movieIndex $ casti . mvtimer $ mf)) . str $ (mf ^. movieFile) td
     mvtimer (MovieData{_movieTimeOffset, _movieFile, _movieCycle, _movieLength}) = (float $ 60 * _movieTimeOffset) !+ (chopChan0 $ timerS' ((timerCount ?~ int 2) . (timerShowFraction ?~ bool False) . (timerStart .~ _resetMovie) . (timerCycle ?~ bool (_movieCycle)) . (timerCycleLimit ?~ bool (_movieCycle)) . (timerCue .~ (traceShowId $ _resetMovie))) (float $ _movieLength - _movieTimeOffset))
     isMainReel = (_movie ^. movieId) == 0
+    sidebyside = glslTP' (topResolution .~ (Just . casti $ bstr "sum(map(lambda x: x.width, me.inputs))", Just . casti $ bstr "max(map(lambda x: x.height, me.inputs))")) "scripts/sidebyside.glsl" []
     votes =
       case _activeVotes of
         (ShowVotes vs) -> vs & traverse . _1 %~ (fst . voteNames . voteText)
