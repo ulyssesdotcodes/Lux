@@ -235,9 +235,23 @@ audios = M.fromList [ (0, "Holme/TAKEONMEUCC.mp3")
                     ]
 
 showVotes :: Map Int ShowVote
-showVotes = M.fromList [ (0, ShowVote $ VoteText ("Basic", "B"))
-                       , (1, ShowVote $ VoteText ("Test", "T"))
-                       , (2, ShowVote $ VoteText ("Hi", "H"))
+showVotes = M.fromList [ (0, ShowVote $ VoteText ("Running (for your life or for exercise)", "A HAUNTED HOUSE"))
+                       , (1, ShowVote $ VoteText ("Making things into other things", "PAPER PLANE FUN BREAKS"))
+                       , (2, ShowVote $ VoteText ("Strength", "ARM WRESTING TOURNAMENT"))
+                       , (3, ShowVote $ VoteText ("Dexterity", "DRIVING GAME"))
+                       , (4, ShowVote $ VoteText ("Facial Hair", "MOUSTACHE GAME"))
+                       , (5, ShowVote $ VoteText ("Chivalry", "THE UVX MEDIEVAL EXPERIENCE"))
+                       , (6, ShowVote $ VoteText ("Grit", "THE UVX WESTERN EXPERIENCE"))
+                       , (7, ShowVote $ VoteText ("Transportation", "THE MTA EXPERIENCE"))
+                       , (8, ShowVote $ VoteText ("Cats that display aberrant behavior", "MY CAT IS SECRETLY SATAN IN DISGUISE"))
+                       , (9, ShowVote $ VoteText ("Modern Telecommunications", "PHONES ARE WEIRD, RIGHT?"))
+                       , (10, ShowVote $ VoteText ("Social interaction with other humans", "THE NUANCES OF HUMAN SMALL TALK ESCAPE ME"))
+                       , (11, ShowVote $ VoteText ("RES*)89__...#&*[[[*(*&]]]", ""))
+                       , (12, ShowVote $ VoteText ("CA(*^^...[TODD]%$&^#", ""))
+                       , (13, ShowVote $ VoteText ("GAZO___&*&(*&^&*", ""))
+                       , (14, ShowVote $ VoteText ("Update my lexicon!", "LEARN ITALIAN"))
+                       , (15, ShowVote $ VoteText ("Improve my flesh chassis!", "PHYSICAL FITNESS CHALLENGE"))
+                       , (16, ShowVote $ VoteText ("Make a backup copy!", "TIME CAPSULE"))
                        ]
 
 -- Run
