@@ -27,7 +27,44 @@ type alias Model =
   , location : Location
   }
 
-type OutgoingMsg = Connecting | NextVote VoteType (List Int) | Reset | KitchenScene | MainReel | Opera Int | OffsetTime Float
+type OutgoingMsg = Connecting
+                 | NextVote VoteType (List Int)
+                 | Reset
+                 | KitchenScene
+                 | Reel1
+                 | Reel2
+                 | Reboot
+                 | OffsetTime Float
+                 | PreshowLoop
+                 | ROS1
+                 | ROS2
+                 | ROS3
+                 | Calibration
+                 | PaperPlane1
+                 | HauntedHouse1
+                 | Countdown
+                 | PaperPlane2
+                 | ROS4
+                 | PlaneTracker1
+                 | Glitch1
+                 | FilmBreak
+                 | HackingScene1
+                 | HackingScene2
+                 | PlaneTracker2
+                 | PaperPlane3
+                 | ROS5
+                 | Memoriam
+                 | PaperPlane4
+                 | PaperPlane5
+                 | Glitch2
+                 | FilmBreak2
+                 | OperaLoading
+                 | Opera
+                 | EndingB
+                 | EndingC
+                 | HauntedHouseEnd
+                 | EndCredits
+                 | QA
 type IncomingMsg = Votes (List String) | PasswordResult Bool
 type VoteType = Show | Film
 
@@ -49,9 +86,40 @@ encodeOutMsg msg =
       NextVote ty is-> Json.Encode.object [("type", Json.Encode.string <| "do" ++ voteType ty ++ "Vote"), ("votes", Json.Encode.list <| List.map Json.Encode.int is)]
       Reset -> Json.Encode.object [("type", Json.Encode.string "reset")]
       KitchenScene -> Json.Encode.object [("type", Json.Encode.string "kitchenScene")]
-      MainReel -> Json.Encode.object [("type", Json.Encode.string "mainReel")]
-      Opera i -> Json.Encode.object [("type", Json.Encode.string "opera"), ("version", Json.Encode.int i)]
+      Reel1 -> Json.Encode.object [("type", Json.Encode.string "reel1")]
+      Reel2 -> Json.Encode.object [("type", Json.Encode.string "reel2")]
+      Reboot -> Json.Encode.object [("type", Json.Encode.string "reboot")]
       OffsetTime t -> Json.Encode.object [("type", Json.Encode.string "offsetTime"), ("timeOffset", Json.Encode.float t)]
+      PreshowLoop -> Json.Encode.object [("type", Json.Encode.string "preshowloop")]
+      ROS1 -> Json.Encode.object [("type", Json.Encode.string "ROS1")]
+      ROS2 -> Json.Encode.object [("type", Json.Encode.string "ROS2")]
+      ROS3 -> Json.Encode.object [("type", Json.Encode.string "ROS3")]
+      Calibration -> Json.Encode.object [("type", Json.Encode.string "calibration")]
+      PaperPlane1 -> Json.Encode.object [("type", Json.Encode.string "paperplane1")]
+      HauntedHouse1 -> Json.Encode.object [("type", Json.Encode.string "hauntedhou")]
+      Countdown -> Json.Encode.object [("type", Json.Encode.string "countdown")]
+      PaperPlane2 -> Json.Encode.object [("type", Json.Encode.string "paperplane2")]
+      ROS4 -> Json.Encode.object [("type", Json.Encode.string "ROS")]
+      PlaneTracker1 -> Json.Encode.object [("type", Json.Encode.string "planetracker1")]
+      Glitch1 -> Json.Encode.object [("type", Json.Encode.string "glitch1")]
+      FilmBreak -> Json.Encode.object [("type", Json.Encode.string "filmbreak")]
+      HackingScene1 -> Json.Encode.object [("type", Json.Encode.string "hackingscene1")]
+      HackingScene2 -> Json.Encode.object [("type", Json.Encode.string "hackingscene2")]
+      PlaneTracker2 -> Json.Encode.object [("type", Json.Encode.string "planetracker2")]
+      PaperPlane3 -> Json.Encode.object [("type", Json.Encode.string "paperplane3")]
+      ROS5 -> Json.Encode.object [("type", Json.Encode.string "ROS5")]
+      Memoriam -> Json.Encode.object [("type", Json.Encode.string "memoriam")]
+      PaperPlane4 -> Json.Encode.object [("type", Json.Encode.string "paperplane4")]
+      PaperPlane5 -> Json.Encode.object [("type", Json.Encode.string "paperplane5")]
+      Glitch2 -> Json.Encode.object [("type", Json.Encode.string "glitch2")]
+      FilmBreak2 -> Json.Encode.object [("type", Json.Encode.string "filmbreak2")]
+      OperaLoading -> Json.Encode.object [("type", Json.Encode.string "operaloading")]
+      Opera -> Json.Encode.object [("type", Json.Encode.string "opera")]
+      EndingB -> Json.Encode.object [("type", Json.Encode.string "endingb")]
+      EndingC -> Json.Encode.object [("type", Json.Encode.string "endingc")]
+      HauntedHouseEnd -> Json.Encode.object [("type", Json.Encode.string "haunted")]
+      EndCredits -> Json.Encode.object [("type", Json.Encode.string "end")]
+      QA -> Json.Encode.object [("type", Json.Encode.string "qa")]
 
 decodeInMsg : String -> Result String IncomingMsg
 decodeInMsg msg =
@@ -118,11 +186,11 @@ view model =
         , button [onClick (Send <| encodeOutMsg <| OffsetTime 10)] [text "FFW"]
         ]
       , div [class "control-group"]
-        [ button [onClick (Send <| encodeOutMsg MainReel)] [text "MainReel"]
+        [ button [onClick (Send <| encodeOutMsg PreshowLoop)] [text "Preshow"]
+        , button [onClick (Send <| encodeOutMsg Calibration)] [text "Calibration"]
+        , button [onClick (Send <| encodeOutMsg Reel1)] [text "Reel1"]
         , button [onClick (Send <| encodeOutMsg KitchenScene)] [text "Kitchen Scene"]
-        , button [onClick (Send <| encodeOutMsg <| Opera 0)] [text "Opera 1"]
-        , button [onClick (Send <| encodeOutMsg <| Opera 1)] [text "Opera 2"]
-        , button [onClick (Send <| encodeOutMsg <| Opera 2)] [text "Opera 3"]
+        , button [onClick (Send <| encodeOutMsg Reel2)] [text "Reel2"]
         ]
       , div [class "control-group"]
         [ button [onClick (Send <| encodeOutMsg <| NextVote Show [0, 1] )] [text "Show Vote 1"]
@@ -138,6 +206,36 @@ view model =
         , button [onClick (Send <| encodeOutMsg <| NextVote Film [1, 2, 9, 11] )] [text "Permutations"]
         , button [onClick (Send <| encodeOutMsg <| NextVote Film [13, 14, 15, 16] )] [text "Alt cameras"]
         , button [onClick (Send <| encodeOutMsg <| NextVote Film [17, 18] )] [text "overlays"]
+        ]
+      , div [class "control-group"]
+        [ button [onClick (Send <| encodeOutMsg ROS1)] [text "ROS1"]
+        , button [onClick (Send <| encodeOutMsg ROS2)] [text "ROS2"]
+        , button [onClick (Send <| encodeOutMsg ROS3)] [text "ROS3"]
+        , button [onClick (Send <| encodeOutMsg PaperPlane1)] [text "paperplane1"]
+        , button [onClick (Send <| encodeOutMsg HauntedHouse1)] [text "hauntedhou"]
+        , button [onClick (Send <| encodeOutMsg Countdown)] [text "countdown"]
+        , button [onClick (Send <| encodeOutMsg PaperPlane2)] [text "paperplane2"]
+        , button [onClick (Send <| encodeOutMsg ROS4)] [text "ROS"]
+        , button [onClick (Send <| encodeOutMsg PlaneTracker1)] [text "planetracker1"]
+        , button [onClick (Send <| encodeOutMsg Glitch1)] [text "glitch1"]
+        , button [onClick (Send <| encodeOutMsg FilmBreak)] [text "filmbreak"]
+        , button [onClick (Send <| encodeOutMsg HackingScene1)] [text "hackingscene1"]
+        , button [onClick (Send <| encodeOutMsg HackingScene2)] [text "hackingscene2"]
+        , button [onClick (Send <| encodeOutMsg PlaneTracker2)] [text "planetracker2"]
+        , button [onClick (Send <| encodeOutMsg PaperPlane3)] [text "paperplane3"]
+        , button [onClick (Send <| encodeOutMsg ROS5)] [text "ROS5"]
+        , button [onClick (Send <| encodeOutMsg Memoriam)] [text "memoriam"]
+        , button [onClick (Send <| encodeOutMsg PaperPlane4)] [text "paperplane4"]
+        , button [onClick (Send <| encodeOutMsg PaperPlane5)] [text "paperplane5"]
+        , button [onClick (Send <| encodeOutMsg Glitch2)] [text "glitch2"]
+        , button [onClick (Send <| encodeOutMsg FilmBreak2)] [text "filmbreak2"]
+        , button [onClick (Send <| encodeOutMsg OperaLoading)] [text "opera loading"]
+        , button [onClick (Send <| encodeOutMsg Opera)] [text "opera"]
+        , button [onClick (Send <| encodeOutMsg EndingB)] [text "endingb"]
+        , button [onClick (Send <| encodeOutMsg EndingC)] [text "endingc"]
+        , button [onClick (Send <| encodeOutMsg HauntedHouseEnd)] [text "haunted"]
+        , button [onClick (Send <| encodeOutMsg EndCredits)] [text "end"]
+        , button [onClick (Send <| encodeOutMsg QA)] [text "qa"]
         ]
       ]
     ] ++ indexedMap (\i t -> p [] [text t]) model.votes

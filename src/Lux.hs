@@ -61,9 +61,41 @@ data Message = Connecting Text
   | DoFilmVote [Int]
   | Reset
   | KitchenScene
-  | MainReel
-  | Opera Int
+  | Reel1
+  | Reel2
+  | Reboot
   | OffsetTime Float
+-- Cues
+  | PreshowLoop
+  | ROS1
+  | ROS2
+  | ROS3
+  | Calibration
+  | PaperPlane1
+  | HauntedHouse1
+  | Countdown
+  | PaperPlane2
+  | ROS4
+  | PlaneTracker1
+  | Glitch1
+  | FilmBreak
+  | HackingScene1
+  | HackingScene2
+  | PlaneTracker2
+  | PaperPlane3
+  | ROS5
+  | Memoriam
+  | PaperPlane4
+  | PaperPlane5
+  | Glitch2
+  | FilmBreak2
+  | OperaLoading
+  | Opera
+  | EndingB
+  | EndingC
+  | HauntedHouseEnd
+  | EndCredits
+  | QA
   -- Triger(movie,lux,etc), GotoTime,
 
 data OutputState = Tree TOP
@@ -78,9 +110,41 @@ instance FromJSON Message where
       "doFilmVote" -> DoFilmVote <$> o .: "votes"
       "offsetTime" -> OffsetTime <$> o .: "timeOffset"
       "kitchenScene" -> return KitchenScene
-      "mainReel" -> return MainReel
-      "opera" -> Opera <$> o .: "version"
+      "reel1" -> return Reel1
+      "reel2" -> return Reel2
+      "reboot" -> return Reboot
       "reset" -> return Reset
+-- Cues
+      "preshowloop" -> return PreshowLoop
+      "ROS1" -> return ROS1
+      "ROS2" -> return ROS2
+      "ROS3" -> return ROS3
+      "calibration" -> return Calibration
+      "paperplane1" -> return PaperPlane1
+      "hauntedhou" -> return HauntedHouse1
+      "countdown" -> return Countdown
+      "paperplane2" -> return PaperPlane2
+      "ROS" -> return ROS4
+      "planetracker1" -> return PlaneTracker1
+      "glitch1" -> return Glitch1
+      "filmbreak" -> return FilmBreak
+      "hackingscene1" -> return HackingScene1
+      "hackingscene2" -> return HackingScene2
+      "planetracker2" -> return PlaneTracker2
+      "paperplane3" -> return PaperPlane3
+      "ROS5" -> return ROS5
+      "memoriam" -> return Memoriam
+      "paperplane4" -> return PaperPlane4
+      "paperplane5" -> return PaperPlane5
+      "glitch2" -> return Glitch2
+      "filmbreak2" -> return FilmBreak2
+      "operaloading" -> return OperaLoading
+      "opera" -> return Opera
+      "endingb" -> return EndingB
+      "endingc" -> return EndingC
+      "haunted" -> return HauntedHouseEnd
+      "end" -> return EndCredits
+      "qa" -> return QA
       _ -> fail ("Unknown type " ++ ty)
 
 data OutMsg = VotesMsg [Text] | PasswordResult Bool
@@ -96,12 +160,15 @@ data TDState = TDState { _activeVotes :: ActiveVotes
                        , _lastVoteWinner :: Maybe VoteText
                        , _voteTimer :: Maybe Int
                        , _movie :: MovieData
+                       , _secondaryMovie :: Maybe MovieData
+                       , _overlayVoteScreen :: Maybe MovieData
                        , _overlays :: [ MovieData ]
                        , _altmovie :: Maybe MovieData
                        , _effects :: [ Effect ]
                        , _audioTrack :: Maybe BS.ByteString
                        , _inCamera :: Int
                        , _resetMovie :: Bool
+                       , _resetSecondary :: Bool
                        , _rlist :: [Float]
                        }
 
@@ -190,7 +257,7 @@ newServerState :: TOPRunner -> IO ServerState
 newServerState tr = newTDState >>= pure . ServerState [] tr "password"
 
 newTDState :: IO TDState
-newTDState = newStdGen >>= pure . TDState NoVotes filmVotes Nothing Nothing (films ! 0) [] Nothing [] Nothing 0 False . randoms
+newTDState = newStdGen >>= pure . TDState NoVotes filmVotes Nothing Nothing (films ! 0) Nothing Nothing [] Nothing [] Nothing 0 True True . randoms
 
 filmVotes :: Map Int FilmVote
 filmVotes = M.fromList [ (1, FilmVote (VoteText ("Six foot Orange", "SFO")) (InCamera 2))
@@ -214,11 +281,9 @@ filmVotes = M.fromList [ (1, FilmVote (VoteText ("Six foot Orange", "SFO")) (InC
                       ]
 
 films :: Map Int MovieData
-films = M.fromList [ (0, MovieData 0 (printf "Holme/%05b.mov" . _inCamera) 1357 False True 0)
-                   , (1, MovieData 1 (const "Holme/kitchen_scene.mov") 600 False False 0)
-                   , (2, MovieData 2 (const "Holme/opera_1.mov") 600 False False 0)
-                   , (3, MovieData 3 (const "Holme/opera_2.mov") 600 False False 0)
-                   , (4, MovieData 4 (const "Holme/opera_3.mov") 600 False False 0)
+films = M.fromList [ (0, MovieData 0 (printf "Holme/0%05b.mov" . _inCamera) 1357 False True 0)
+                   , (1, MovieData 1 (const "Holme/100000.mov") 600 False False 0)
+                   , (2, MovieData 2 (printf "Holme/3%05b.mov" . _inCamera) 1357 False True 0)
                    , (5, MovieData 5 (const "Holme/third_grader.mov") 1357 False False 0)
                    , (6, MovieData 6 (const "Holme/fish_cam.mov") 1357 False False 0)
                    , (7, MovieData 7 (const "Holme/chicken_cam.mov") 1357 False False 0)
@@ -228,6 +293,27 @@ films = M.fromList [ (0, MovieData 0 (printf "Holme/%05b.mov" . _inCamera) 1357 
                    , (11, MovieData 11 (const "Holme/sub_3.mov") 1357 False False 0)
                    , (12, MovieData 12 (const "Holme/mocap_man.mov") 1357 False False 0)
                    , (13, MovieData 13 (const "Holme/subliminals.mov") 1357 False False 0)
+                   , (14, MovieData 14 (const "Holme/preshowloop.mov") 900 True False 0)
+                   , (15, MovieData 15 (const "Holme/mrdna.mov") 900 True False 0)
+                   , (16, MovieData 16 (const "Holme/calibration.mov") 180 False False 0)
+                   , (17, MovieData 17 (const "Holme/countdown.mov") 30 False False 0)
+                   , (18, MovieData 18 (const "Holme/tracker1.mov") 240 False False 0)
+                   , (19, MovieData 19 (const "Holme/glitch1.mov") 240 False False 0)
+                   , (20, MovieData 20 (const "Holme/filmbreak.mov") 60 False False 0)
+                   , (21, MovieData 21 (const "Holme/hack1.mov") 120 False False 0)
+                   , (22, MovieData 22 (const "Holme/hack2.mov") 240 False False 0)
+                   , (23, MovieData 23 (const "Holme/tracker2.mov") 720 False False 0)
+                   , (24, MovieData 24 (const "Holme/memoriam.mov") 300 False False 0)
+                   , (25, MovieData 25 (const "Holme/glitch2.mov") 240 False False 0)
+                   , (26, MovieData 26 (const "Holme/filmbreak2.mov") 120 False False 0)
+                   , (27, MovieData 27 (const "Holme/operaload.mov") 360 False False 0)
+                   , (28, MovieData 28 (const "Holme/opera.mov") 600 False False 0)
+                   , (29, MovieData 29 (const "Holme/ending B.mov") 600 False False 0)
+                   , (30, MovieData 30 (const "Holme/ending C.mov") 600 False False 0)
+                   , (31, MovieData 31 (const "Holme/hauntedend.mov") 120 False False 0)
+                   , (32, MovieData 32 (const "Holme/endcredits.mov") 900 False False 0)
+                   , (33, MovieData 33 (const "Holme/qa.mov") 900 False False 0)
+                   , (34, MovieData 34 (const "Holme/supertitles.mov") 600 False False 0)
                    ]
 
 audios :: Map Int BS.ByteString
@@ -276,21 +362,22 @@ loop count = do
   loop count
 
 
-renderTDState td@(TDState {_activeVotes, _lastVoteWinner, _voteTimer, _movie, _effects, _audioTrack, _resetMovie, _overlays}) =
-  (outT $ sidebyside [
+renderTDState td@(TDState {_activeVotes, _lastVoteWinner, _voteTimer, _movie, _effects, _audioTrack, _resetMovie, _overlays, _secondaryMovie, _resetSecondary, _overlayVoteScreen}) =
+  (outT $  sidebyside $ (maybeToList (mv _resetSecondary <$> _secondaryMovie)) ++ [maybe (
     compT 31 $ zipWith renderVote [0..] votes
     ++ maybeToList (resText . (++) "Last vote: " . unpack . snd . voteNames <$> _lastVoteWinner)
     ++ maybeToList (fmap (resTexts . caststr . LD.floor)
                     $ (!*) . msToF
                     <*> ((!+) (float 1) . (!*) (float (-1))) . chopChanName "timer_fraction" . (timerS' (timerStart .~ _resetMovie)) . msToF
-                    <$> _voteTimer)
+                    <$> _voteTimer)) (mv _resetMovie) _overlayVoteScreen
     , compT 31 $
-      (mv <$> (if isMainReel then _overlays else []))
-        ++ [ (if isMainReel then maybe (mv _movie) mv (_altmovie td) else mv _movie) & (foldl (.) id $ if isMainReel then _effects else []) ]
+    -- ++
+      (mv _resetMovie <$> (if isMainReel then _overlays else []))
+        ++ [ (if isMainReel then maybe (mv _resetMovie _movie) (mv _resetMovie) (_altmovie td) else mv _resetMovie _movie) & (foldl (.) id $ if isMainReel then _effects else []) ]
     ]
   , audioDevOut' (audioDevOutVolume ?~ float 0) $
     math' opsadd $
-                  [ audioMovie (mv _movie)
+                  [ audioMovie (mv _resetMovie _movie)
                   ] ++ maybeToList (audioFileIn . str . BS.unpack <$> _audioTrack)
   )
   where
@@ -298,9 +385,9 @@ renderTDState td@(TDState {_activeVotes, _lastVoteWinner, _voteTimer, _movie, _e
       (resText .  (flip (++) $ show tally) . unpack $ voteName)
       & transformT' (transformTranslate .~ (Nothing, Just . float $ (1 - 0.33 * (fromIntegral $ idx) - 0.66)))
     msToF = float . (flip (/) 1000.0) . fromIntegral
-    mv mf = movieFileIn' ((moviePlayMode ?~ int 0) . ((?~) movieIndex $ casti . mvtimer $ mf)) . str $ (mf ^. movieFile) td
-    mvtimer (MovieData{_movieTimeOffset, _movieFile, _movieCycle, _movieLength}) = (float $ 60 * _movieTimeOffset) !+ (chopChan0 $ timerS' ((timerCount ?~ int 2) . (timerShowFraction ?~ bool False) . (timerStart .~ _resetMovie) . (timerCycle ?~ bool (_movieCycle)) . (timerCycleLimit ?~ bool (_movieCycle)) . (timerCue .~ (traceShowId $ _resetMovie))) (float $ _movieLength - _movieTimeOffset))
-    isMainReel = (_movie ^. movieId) == 0
+    mv rmov mf = movieFileIn' ((moviePlayMode ?~ int 0) . ((?~) movieIndex $ casti . mvtimer rmov $ mf)) . str $ (mf ^. movieFile) td
+    mvtimer rmov (MovieData{_movieTimeOffset, _movieFile, _movieCycle, _movieLength, _movieId}) = (float $ 60 * _movieTimeOffset) !+ (chopChan0 $ fix (BS.pack $ "custardtimer_" ++ show _movieId ++ "_cust") $ timerS' ((timerCount ?~ int 2) . (timerShowFraction ?~ bool False) . (timerStart .~ rmov) . (timerCycle ?~ bool (_movieCycle)) . (timerCycleLimit ?~ bool (_movieCycle)) . (timerCue .~ rmov)) (float $ _movieLength - _movieTimeOffset))
+    isMainReel = _movie ^. movieEffects
     sidebyside = glslTP' (topResolution .~ (Just . casti $ bstr "sum(map(lambda x: x.width, me.inputs))", Just . casti $ bstr "max(map(lambda x: x.height, me.inputs))")) "scripts/sidebyside.glsl" []
     votes =
       case _activeVotes of
@@ -314,7 +401,7 @@ resTexts = textT' (topResolution .~ iv2 (1920, 1080))
 modifyTDState :: (TDState -> TDState) -> MVar ServerState -> IO ()
 modifyTDState f state = do
   s <- takeMVar state
-  let s' = s & tdState %~ ((\tdp -> tdp & resetMovie .~ ((s ^. tdState . movie . movieId) /= (tdp ^. movie . movieId))) . f)
+  let s' = s & tdState %~ ((\tdp -> tdp & resetMovie .~ ((s ^. tdState . movie . movieId) /= (tdp ^. movie . movieId)) & resetSecondary .~ ((s ^? tdState . secondaryMovie . _Just . movieId) /= (tdp ^? secondaryMovie . _Just . movieId))) . f)
   putMVar state s'
   s ^. runner $ renderTDState $ s' ^. tdState
   let tdVal g = s' ^. tdState . g
@@ -359,15 +446,47 @@ receive conn state (id, _) = do
       (Just (DoFilmVote vs)) -> startTimer (nextFilmVote vs)
       (Just (DoShowVote vs)) -> startTimer (nextShowVote vs)
       (Just (Connecting ps)) -> putStrLn "Connecting twice?"
-      (Just MainReel) -> modifyTDState (changeReel 0) state
+      (Just Reel1) -> modifyTDState (changeReel 0) state
+      (Just Reboot) -> modifyTDState (changeReel 1) state
+      (Just Reel2) -> modifyTDState (changeReel 2) state
       (Just KitchenScene) -> modifyTDState (changeReel 1) state
-      (Just (Opera i)) -> modifyTDState (changeReel (i + 2)) state
       (Just (OffsetTime t)) -> modifyTDState (changeTime t) state
+      (Just PreshowLoop) -> modifyTDState (changeReel 14) state
+      -- (JUST ROS1) -> modifyTDState (_) state
+      (Just ROS2) -> modifyTDState (changeSecondaryReel 15) state
+      -- (JUST ROS3) -> modifyTDState (_) state
+      (Just Calibration) -> modifyTDState (changeReel 16) state
+      -- (Just PaperPlane1) -> modifyTDState (_) state
+      -- (Just HauntedHouse1) -> modifyTDState (_) state
+      (Just Countdown) -> modifyTDState (overrideVoteScreen 17 . changeReel 17 . changeSecondaryReel 17) state
+      -- (Just PaperPlane2) -> modifyTDState (_) state
+      -- (JUST ROS4) -> modifyTDState (_) state
+      (Just PlaneTracker1) -> modifyTDState (changeSecondaryReel 18) state
+      (Just Glitch1) -> modifyTDState (changeReel 19) state
+      (Just FilmBreak) -> modifyTDState (changeReel 20 . changeSecondaryReel 20) state
+      (Just HackingScene1) -> modifyTDState (changeSecondaryReel 21) state
+      (Just HackingScene2) -> modifyTDState (changeSecondaryReel 22) state
+      -- (JUST REBOOT) -> modifyTDState (_) state
+      (Just PlaneTracker2) -> modifyTDState (changeSecondaryReel 23) state
+      -- (Just PaperPlane3) -> modifyTDState (_) state
+      -- (JUST ROS5) -> modifyTDState (_) state
+      (Just Memoriam) -> modifyTDState (changeSecondaryReel 24) state
+      -- (Just PaperPlane4) -> modifyTDState (_) state
+      -- (Just PaperPlane5) -> modifyTDState (_) state
+      (Just Glitch2) -> modifyTDState (changeSecondaryReel 25) state
+      (Just FilmBreak2) -> modifyTDState (changeReel 26 . overrideVoteScreen 26 . changeSecondaryReel 26) state
+      (Just OperaLoading) -> modifyTDState (changeReel 27 . changeSecondaryReel 27) state
+      (Just Opera) -> modifyTDState (changeReel 28 . overrideVoteScreen 34 . changeSecondaryReel 34) state
+      (Just EndingB) -> modifyTDState (changeReel 29 . overrideVoteScreen 34 . changeSecondaryReel 34) state
+      (Just EndingC) -> modifyTDState (changeReel 30 . overrideVoteScreen 30 . changeSecondaryReel 30) state
+      (Just HauntedHouseEnd) -> modifyTDState (overrideVoteScreen 31) state
+      (Just EndCredits) -> modifyTDState (changeReel 32) state
+      (Just QA) -> modifyTDState (changeSecondaryReel 33) state
       Nothing -> putStrLn "Unrecognized message"
   wait thr
   where
     startTimer nextVote = do
-        let voteLength = 4000
+        let voteLength = 16000
         timer <- newTimer voteLength
         __ <- forkIO $ do
           waitTimer timer
@@ -397,10 +516,16 @@ nextFilmVote ids td =
     rvotes rs vs = (drop (length vs) rlist',) . take 3 . nub . catMaybes . snd $ mapAccumL (flip popAt) vs (zipWith rids (backsaw $ length vs) rs)
     rids l r = Prelude.floor $ r * (fromIntegral l + 1)
   in
-    td & (activeVotes .~ newVotes) . (rlist .~ newrs)
+    td & (activeVotes .~ newVotes) . (rlist .~ newrs) . (overlayVoteScreen .~ Nothing)
 
 changeReel :: Int -> TDState -> TDState
 changeReel id = movie .~ films ! id
+
+changeSecondaryReel :: Int -> TDState -> TDState
+changeSecondaryReel id = secondaryMovie ?~ films ! id
+
+overrideVoteScreen :: Int -> TDState -> TDState
+overrideVoteScreen id = overlayVoteScreen ?~ films ! id
 
 changeTime :: Float -> TDState -> TDState
 changeTime dt = movie %~ (\(MovieData i f l c e t) -> MovieData i f l c e (t + dt))
@@ -412,7 +537,7 @@ popAt :: Show a => Int -> [a] -> ([a], Maybe a)
 popAt i as = foldr (\(i', a) (as, ma)  -> (if i == i' then (as, Just a) else (a:as, ma))) ([], Nothing) $ zip [0..] as
 
 nextShowVote :: [ Int ] -> TDState -> TDState
-nextShowVote ids = set activeVotes (ShowVotes . catMaybes $ fmap (, 0)  . flip lookup showVotes <$> ids)
+nextShowVote ids = (activeVotes .~ (ShowVotes . catMaybes $ fmap (, 0)  . flip lookup showVotes <$> ids)) . (overlayVoteScreen .~ Nothing)
 
 lookups :: Ord k => Map k v -> [k] -> [v]
 lookups m = catMaybes . fmap (flip lookup m)

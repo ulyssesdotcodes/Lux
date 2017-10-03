@@ -9858,37 +9858,40 @@ var _user$project$Main$encodeOutMsg = function (msg) {
 							},
 							_1: {ctor: '[]'}
 						});
-				case 'MainReel':
+				case 'Reel1':
 					return _elm_lang$core$Json_Encode$object(
 						{
 							ctor: '::',
 							_0: {
 								ctor: '_Tuple2',
 								_0: 'type',
-								_1: _elm_lang$core$Json_Encode$string('mainReel')
+								_1: _elm_lang$core$Json_Encode$string('reel1')
 							},
 							_1: {ctor: '[]'}
 						});
-				case 'Opera':
+				case 'Reel2':
 					return _elm_lang$core$Json_Encode$object(
 						{
 							ctor: '::',
 							_0: {
 								ctor: '_Tuple2',
 								_0: 'type',
-								_1: _elm_lang$core$Json_Encode$string('opera')
+								_1: _elm_lang$core$Json_Encode$string('reel2')
 							},
-							_1: {
-								ctor: '::',
-								_0: {
-									ctor: '_Tuple2',
-									_0: 'version',
-									_1: _elm_lang$core$Json_Encode$int(_p1._0)
-								},
-								_1: {ctor: '[]'}
-							}
+							_1: {ctor: '[]'}
 						});
-				default:
+				case 'Reboot':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('reboot')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'OffsetTime':
 					return _elm_lang$core$Json_Encode$object(
 						{
 							ctor: '::',
@@ -9907,6 +9910,336 @@ var _user$project$Main$encodeOutMsg = function (msg) {
 								_1: {ctor: '[]'}
 							}
 						});
+				case 'PreshowLoop':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('preshowloop')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'ROS1':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('ROS1')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'ROS2':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('ROS2')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'ROS3':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('ROS3')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'Calibration':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('calibration')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'PaperPlane1':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('paperplane1')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'HauntedHouse1':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('hauntedhou')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'Countdown':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('countdown')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'PaperPlane2':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('paperplane2')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'ROS4':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('ROS')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'PlaneTracker1':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('planetracker1')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'Glitch1':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('glitch1')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'FilmBreak':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('filmbreak')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'HackingScene1':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('hackingscene1')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'HackingScene2':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('hackingscene2')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'PlaneTracker2':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('planetracker2')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'PaperPlane3':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('paperplane3')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'ROS5':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('ROS5')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'Memoriam':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('memoriam')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'PaperPlane4':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('paperplane4')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'PaperPlane5':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('paperplane5')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'Glitch2':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('glitch2')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'FilmBreak2':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('filmbreak2')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'OperaLoading':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('operaloading')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'Opera':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('opera')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'EndingB':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('endingb')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'EndingC':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('endingc')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'HauntedHouseEnd':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('haunted')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'EndCredits':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('end')
+							},
+							_1: {ctor: '[]'}
+						});
+				default:
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('qa')
+							},
+							_1: {ctor: '[]'}
+						});
 			}
 		}());
 };
@@ -9914,13 +10247,42 @@ var _user$project$Main$Model = F4(
 	function (a, b, c, d) {
 		return {messages: a, votes: b, passworded: c, location: d};
 	});
+var _user$project$Main$QA = {ctor: 'QA'};
+var _user$project$Main$EndCredits = {ctor: 'EndCredits'};
+var _user$project$Main$HauntedHouseEnd = {ctor: 'HauntedHouseEnd'};
+var _user$project$Main$EndingC = {ctor: 'EndingC'};
+var _user$project$Main$EndingB = {ctor: 'EndingB'};
+var _user$project$Main$Opera = {ctor: 'Opera'};
+var _user$project$Main$OperaLoading = {ctor: 'OperaLoading'};
+var _user$project$Main$FilmBreak2 = {ctor: 'FilmBreak2'};
+var _user$project$Main$Glitch2 = {ctor: 'Glitch2'};
+var _user$project$Main$PaperPlane5 = {ctor: 'PaperPlane5'};
+var _user$project$Main$PaperPlane4 = {ctor: 'PaperPlane4'};
+var _user$project$Main$Memoriam = {ctor: 'Memoriam'};
+var _user$project$Main$ROS5 = {ctor: 'ROS5'};
+var _user$project$Main$PaperPlane3 = {ctor: 'PaperPlane3'};
+var _user$project$Main$PlaneTracker2 = {ctor: 'PlaneTracker2'};
+var _user$project$Main$HackingScene2 = {ctor: 'HackingScene2'};
+var _user$project$Main$HackingScene1 = {ctor: 'HackingScene1'};
+var _user$project$Main$FilmBreak = {ctor: 'FilmBreak'};
+var _user$project$Main$Glitch1 = {ctor: 'Glitch1'};
+var _user$project$Main$PlaneTracker1 = {ctor: 'PlaneTracker1'};
+var _user$project$Main$ROS4 = {ctor: 'ROS4'};
+var _user$project$Main$PaperPlane2 = {ctor: 'PaperPlane2'};
+var _user$project$Main$Countdown = {ctor: 'Countdown'};
+var _user$project$Main$HauntedHouse1 = {ctor: 'HauntedHouse1'};
+var _user$project$Main$PaperPlane1 = {ctor: 'PaperPlane1'};
+var _user$project$Main$Calibration = {ctor: 'Calibration'};
+var _user$project$Main$ROS3 = {ctor: 'ROS3'};
+var _user$project$Main$ROS2 = {ctor: 'ROS2'};
+var _user$project$Main$ROS1 = {ctor: 'ROS1'};
+var _user$project$Main$PreshowLoop = {ctor: 'PreshowLoop'};
 var _user$project$Main$OffsetTime = function (a) {
 	return {ctor: 'OffsetTime', _0: a};
 };
-var _user$project$Main$Opera = function (a) {
-	return {ctor: 'Opera', _0: a};
-};
-var _user$project$Main$MainReel = {ctor: 'MainReel'};
+var _user$project$Main$Reboot = {ctor: 'Reboot'};
+var _user$project$Main$Reel2 = {ctor: 'Reel2'};
+var _user$project$Main$Reel1 = {ctor: 'Reel1'};
 var _user$project$Main$KitchenScene = {ctor: 'KitchenScene'};
 var _user$project$Main$Reset = {ctor: 'Reset'};
 var _user$project$Main$NextVote = F2(
@@ -10155,12 +10517,12 @@ var _user$project$Main$view = function (model) {
 												ctor: '::',
 												_0: _elm_lang$html$Html_Events$onClick(
 													_user$project$Main$Send(
-														_user$project$Main$encodeOutMsg(_user$project$Main$MainReel))),
+														_user$project$Main$encodeOutMsg(_user$project$Main$PreshowLoop))),
 												_1: {ctor: '[]'}
 											},
 											{
 												ctor: '::',
-												_0: _elm_lang$html$Html$text('MainReel'),
+												_0: _elm_lang$html$Html$text('Preshow'),
 												_1: {ctor: '[]'}
 											}),
 										_1: {
@@ -10171,12 +10533,12 @@ var _user$project$Main$view = function (model) {
 													ctor: '::',
 													_0: _elm_lang$html$Html_Events$onClick(
 														_user$project$Main$Send(
-															_user$project$Main$encodeOutMsg(_user$project$Main$KitchenScene))),
+															_user$project$Main$encodeOutMsg(_user$project$Main$Calibration))),
 													_1: {ctor: '[]'}
 												},
 												{
 													ctor: '::',
-													_0: _elm_lang$html$Html$text('Kitchen Scene'),
+													_0: _elm_lang$html$Html$text('Calibration'),
 													_1: {ctor: '[]'}
 												}),
 											_1: {
@@ -10187,13 +10549,12 @@ var _user$project$Main$view = function (model) {
 														ctor: '::',
 														_0: _elm_lang$html$Html_Events$onClick(
 															_user$project$Main$Send(
-																_user$project$Main$encodeOutMsg(
-																	_user$project$Main$Opera(0)))),
+																_user$project$Main$encodeOutMsg(_user$project$Main$Reel1))),
 														_1: {ctor: '[]'}
 													},
 													{
 														ctor: '::',
-														_0: _elm_lang$html$Html$text('Opera 1'),
+														_0: _elm_lang$html$Html$text('Reel1'),
 														_1: {ctor: '[]'}
 													}),
 												_1: {
@@ -10204,13 +10565,12 @@ var _user$project$Main$view = function (model) {
 															ctor: '::',
 															_0: _elm_lang$html$Html_Events$onClick(
 																_user$project$Main$Send(
-																	_user$project$Main$encodeOutMsg(
-																		_user$project$Main$Opera(1)))),
+																	_user$project$Main$encodeOutMsg(_user$project$Main$KitchenScene))),
 															_1: {ctor: '[]'}
 														},
 														{
 															ctor: '::',
-															_0: _elm_lang$html$Html$text('Opera 2'),
+															_0: _elm_lang$html$Html$text('Kitchen Scene'),
 															_1: {ctor: '[]'}
 														}),
 													_1: {
@@ -10221,13 +10581,12 @@ var _user$project$Main$view = function (model) {
 																ctor: '::',
 																_0: _elm_lang$html$Html_Events$onClick(
 																	_user$project$Main$Send(
-																		_user$project$Main$encodeOutMsg(
-																			_user$project$Main$Opera(2)))),
+																		_user$project$Main$encodeOutMsg(_user$project$Main$Reel2))),
 																_1: {ctor: '[]'}
 															},
 															{
 																ctor: '::',
-																_0: _elm_lang$html$Html$text('Opera 3'),
+																_0: _elm_lang$html$Html$text('Reel2'),
 																_1: {ctor: '[]'}
 															}),
 														_1: {ctor: '[]'}
@@ -10263,11 +10622,7 @@ var _user$project$Main$view = function (model) {
 																		_1: {
 																			ctor: '::',
 																			_0: 1,
-																			_1: {
-																				ctor: '::',
-																				_0: 2,
-																				_1: {ctor: '[]'}
-																			}
+																			_1: {ctor: '[]'}
 																		}
 																	})))),
 													_1: {ctor: '[]'}
@@ -10294,10 +10649,10 @@ var _user$project$Main$view = function (model) {
 																			_0: 2,
 																			_1: {
 																				ctor: '::',
-																				_0: 1,
+																				_0: 3,
 																				_1: {
 																					ctor: '::',
-																					_0: 0,
+																					_0: 4,
 																					_1: {ctor: '[]'}
 																				}
 																			}
@@ -10309,7 +10664,139 @@ var _user$project$Main$view = function (model) {
 														_0: _elm_lang$html$Html$text('Show Vote 2'),
 														_1: {ctor: '[]'}
 													}),
-												_1: {ctor: '[]'}
+												_1: {
+													ctor: '::',
+													_0: A2(
+														_elm_lang$html$Html$button,
+														{
+															ctor: '::',
+															_0: _elm_lang$html$Html_Events$onClick(
+																_user$project$Main$Send(
+																	_user$project$Main$encodeOutMsg(
+																		A2(
+																			_user$project$Main$NextVote,
+																			_user$project$Main$Show,
+																			{
+																				ctor: '::',
+																				_0: 5,
+																				_1: {
+																					ctor: '::',
+																					_0: 6,
+																					_1: {
+																						ctor: '::',
+																						_0: 7,
+																						_1: {ctor: '[]'}
+																					}
+																				}
+																			})))),
+															_1: {ctor: '[]'}
+														},
+														{
+															ctor: '::',
+															_0: _elm_lang$html$Html$text('Show Vote 3'),
+															_1: {ctor: '[]'}
+														}),
+													_1: {
+														ctor: '::',
+														_0: A2(
+															_elm_lang$html$Html$button,
+															{
+																ctor: '::',
+																_0: _elm_lang$html$Html_Events$onClick(
+																	_user$project$Main$Send(
+																		_user$project$Main$encodeOutMsg(
+																			A2(
+																				_user$project$Main$NextVote,
+																				_user$project$Main$Show,
+																				{
+																					ctor: '::',
+																					_0: 8,
+																					_1: {
+																						ctor: '::',
+																						_0: 9,
+																						_1: {
+																							ctor: '::',
+																							_0: 10,
+																							_1: {ctor: '[]'}
+																						}
+																					}
+																				})))),
+																_1: {ctor: '[]'}
+															},
+															{
+																ctor: '::',
+																_0: _elm_lang$html$Html$text('Show Vote 4'),
+																_1: {ctor: '[]'}
+															}),
+														_1: {
+															ctor: '::',
+															_0: A2(
+																_elm_lang$html$Html$button,
+																{
+																	ctor: '::',
+																	_0: _elm_lang$html$Html_Events$onClick(
+																		_user$project$Main$Send(
+																			_user$project$Main$encodeOutMsg(
+																				A2(
+																					_user$project$Main$NextVote,
+																					_user$project$Main$Show,
+																					{
+																						ctor: '::',
+																						_0: 11,
+																						_1: {
+																							ctor: '::',
+																							_0: 12,
+																							_1: {
+																								ctor: '::',
+																								_0: 13,
+																								_1: {ctor: '[]'}
+																							}
+																						}
+																					})))),
+																	_1: {ctor: '[]'}
+																},
+																{
+																	ctor: '::',
+																	_0: _elm_lang$html$Html$text('Show Vote 5'),
+																	_1: {ctor: '[]'}
+																}),
+															_1: {
+																ctor: '::',
+																_0: A2(
+																	_elm_lang$html$Html$button,
+																	{
+																		ctor: '::',
+																		_0: _elm_lang$html$Html_Events$onClick(
+																			_user$project$Main$Send(
+																				_user$project$Main$encodeOutMsg(
+																					A2(
+																						_user$project$Main$NextVote,
+																						_user$project$Main$Show,
+																						{
+																							ctor: '::',
+																							_0: 14,
+																							_1: {
+																								ctor: '::',
+																								_0: 15,
+																								_1: {
+																									ctor: '::',
+																									_0: 16,
+																									_1: {ctor: '[]'}
+																								}
+																							}
+																						})))),
+																		_1: {ctor: '[]'}
+																	},
+																	{
+																		ctor: '::',
+																		_0: _elm_lang$html$Html$text('Show Vote 6'),
+																		_1: {ctor: '[]'}
+																	}),
+																_1: {ctor: '[]'}
+															}
+														}
+													}
+												}
 											}
 										}),
 									_1: {
@@ -10535,7 +11022,494 @@ var _user$project$Main$view = function (model) {
 													}
 												}
 											}),
-										_1: {ctor: '[]'}
+										_1: {
+											ctor: '::',
+											_0: A2(
+												_elm_lang$html$Html$div,
+												{
+													ctor: '::',
+													_0: _elm_lang$html$Html_Attributes$class('control-group'),
+													_1: {ctor: '[]'}
+												},
+												{
+													ctor: '::',
+													_0: A2(
+														_elm_lang$html$Html$button,
+														{
+															ctor: '::',
+															_0: _elm_lang$html$Html_Events$onClick(
+																_user$project$Main$Send(
+																	_user$project$Main$encodeOutMsg(_user$project$Main$ROS1))),
+															_1: {ctor: '[]'}
+														},
+														{
+															ctor: '::',
+															_0: _elm_lang$html$Html$text('ROS1'),
+															_1: {ctor: '[]'}
+														}),
+													_1: {
+														ctor: '::',
+														_0: A2(
+															_elm_lang$html$Html$button,
+															{
+																ctor: '::',
+																_0: _elm_lang$html$Html_Events$onClick(
+																	_user$project$Main$Send(
+																		_user$project$Main$encodeOutMsg(_user$project$Main$ROS2))),
+																_1: {ctor: '[]'}
+															},
+															{
+																ctor: '::',
+																_0: _elm_lang$html$Html$text('ROS2'),
+																_1: {ctor: '[]'}
+															}),
+														_1: {
+															ctor: '::',
+															_0: A2(
+																_elm_lang$html$Html$button,
+																{
+																	ctor: '::',
+																	_0: _elm_lang$html$Html_Events$onClick(
+																		_user$project$Main$Send(
+																			_user$project$Main$encodeOutMsg(_user$project$Main$ROS3))),
+																	_1: {ctor: '[]'}
+																},
+																{
+																	ctor: '::',
+																	_0: _elm_lang$html$Html$text('ROS3'),
+																	_1: {ctor: '[]'}
+																}),
+															_1: {
+																ctor: '::',
+																_0: A2(
+																	_elm_lang$html$Html$button,
+																	{
+																		ctor: '::',
+																		_0: _elm_lang$html$Html_Events$onClick(
+																			_user$project$Main$Send(
+																				_user$project$Main$encodeOutMsg(_user$project$Main$PaperPlane1))),
+																		_1: {ctor: '[]'}
+																	},
+																	{
+																		ctor: '::',
+																		_0: _elm_lang$html$Html$text('paperplane1'),
+																		_1: {ctor: '[]'}
+																	}),
+																_1: {
+																	ctor: '::',
+																	_0: A2(
+																		_elm_lang$html$Html$button,
+																		{
+																			ctor: '::',
+																			_0: _elm_lang$html$Html_Events$onClick(
+																				_user$project$Main$Send(
+																					_user$project$Main$encodeOutMsg(_user$project$Main$HauntedHouse1))),
+																			_1: {ctor: '[]'}
+																		},
+																		{
+																			ctor: '::',
+																			_0: _elm_lang$html$Html$text('hauntedhou'),
+																			_1: {ctor: '[]'}
+																		}),
+																	_1: {
+																		ctor: '::',
+																		_0: A2(
+																			_elm_lang$html$Html$button,
+																			{
+																				ctor: '::',
+																				_0: _elm_lang$html$Html_Events$onClick(
+																					_user$project$Main$Send(
+																						_user$project$Main$encodeOutMsg(_user$project$Main$Countdown))),
+																				_1: {ctor: '[]'}
+																			},
+																			{
+																				ctor: '::',
+																				_0: _elm_lang$html$Html$text('countdown'),
+																				_1: {ctor: '[]'}
+																			}),
+																		_1: {
+																			ctor: '::',
+																			_0: A2(
+																				_elm_lang$html$Html$button,
+																				{
+																					ctor: '::',
+																					_0: _elm_lang$html$Html_Events$onClick(
+																						_user$project$Main$Send(
+																							_user$project$Main$encodeOutMsg(_user$project$Main$PaperPlane2))),
+																					_1: {ctor: '[]'}
+																				},
+																				{
+																					ctor: '::',
+																					_0: _elm_lang$html$Html$text('paperplane2'),
+																					_1: {ctor: '[]'}
+																				}),
+																			_1: {
+																				ctor: '::',
+																				_0: A2(
+																					_elm_lang$html$Html$button,
+																					{
+																						ctor: '::',
+																						_0: _elm_lang$html$Html_Events$onClick(
+																							_user$project$Main$Send(
+																								_user$project$Main$encodeOutMsg(_user$project$Main$ROS4))),
+																						_1: {ctor: '[]'}
+																					},
+																					{
+																						ctor: '::',
+																						_0: _elm_lang$html$Html$text('ROS'),
+																						_1: {ctor: '[]'}
+																					}),
+																				_1: {
+																					ctor: '::',
+																					_0: A2(
+																						_elm_lang$html$Html$button,
+																						{
+																							ctor: '::',
+																							_0: _elm_lang$html$Html_Events$onClick(
+																								_user$project$Main$Send(
+																									_user$project$Main$encodeOutMsg(_user$project$Main$PlaneTracker1))),
+																							_1: {ctor: '[]'}
+																						},
+																						{
+																							ctor: '::',
+																							_0: _elm_lang$html$Html$text('planetracker1'),
+																							_1: {ctor: '[]'}
+																						}),
+																					_1: {
+																						ctor: '::',
+																						_0: A2(
+																							_elm_lang$html$Html$button,
+																							{
+																								ctor: '::',
+																								_0: _elm_lang$html$Html_Events$onClick(
+																									_user$project$Main$Send(
+																										_user$project$Main$encodeOutMsg(_user$project$Main$Glitch1))),
+																								_1: {ctor: '[]'}
+																							},
+																							{
+																								ctor: '::',
+																								_0: _elm_lang$html$Html$text('glitch1'),
+																								_1: {ctor: '[]'}
+																							}),
+																						_1: {
+																							ctor: '::',
+																							_0: A2(
+																								_elm_lang$html$Html$button,
+																								{
+																									ctor: '::',
+																									_0: _elm_lang$html$Html_Events$onClick(
+																										_user$project$Main$Send(
+																											_user$project$Main$encodeOutMsg(_user$project$Main$FilmBreak))),
+																									_1: {ctor: '[]'}
+																								},
+																								{
+																									ctor: '::',
+																									_0: _elm_lang$html$Html$text('filmbreak'),
+																									_1: {ctor: '[]'}
+																								}),
+																							_1: {
+																								ctor: '::',
+																								_0: A2(
+																									_elm_lang$html$Html$button,
+																									{
+																										ctor: '::',
+																										_0: _elm_lang$html$Html_Events$onClick(
+																											_user$project$Main$Send(
+																												_user$project$Main$encodeOutMsg(_user$project$Main$HackingScene1))),
+																										_1: {ctor: '[]'}
+																									},
+																									{
+																										ctor: '::',
+																										_0: _elm_lang$html$Html$text('hackingscene1'),
+																										_1: {ctor: '[]'}
+																									}),
+																								_1: {
+																									ctor: '::',
+																									_0: A2(
+																										_elm_lang$html$Html$button,
+																										{
+																											ctor: '::',
+																											_0: _elm_lang$html$Html_Events$onClick(
+																												_user$project$Main$Send(
+																													_user$project$Main$encodeOutMsg(_user$project$Main$HackingScene2))),
+																											_1: {ctor: '[]'}
+																										},
+																										{
+																											ctor: '::',
+																											_0: _elm_lang$html$Html$text('hackingscene2'),
+																											_1: {ctor: '[]'}
+																										}),
+																									_1: {
+																										ctor: '::',
+																										_0: A2(
+																											_elm_lang$html$Html$button,
+																											{
+																												ctor: '::',
+																												_0: _elm_lang$html$Html_Events$onClick(
+																													_user$project$Main$Send(
+																														_user$project$Main$encodeOutMsg(_user$project$Main$PlaneTracker2))),
+																												_1: {ctor: '[]'}
+																											},
+																											{
+																												ctor: '::',
+																												_0: _elm_lang$html$Html$text('planetracker2'),
+																												_1: {ctor: '[]'}
+																											}),
+																										_1: {
+																											ctor: '::',
+																											_0: A2(
+																												_elm_lang$html$Html$button,
+																												{
+																													ctor: '::',
+																													_0: _elm_lang$html$Html_Events$onClick(
+																														_user$project$Main$Send(
+																															_user$project$Main$encodeOutMsg(_user$project$Main$PaperPlane3))),
+																													_1: {ctor: '[]'}
+																												},
+																												{
+																													ctor: '::',
+																													_0: _elm_lang$html$Html$text('paperplane3'),
+																													_1: {ctor: '[]'}
+																												}),
+																											_1: {
+																												ctor: '::',
+																												_0: A2(
+																													_elm_lang$html$Html$button,
+																													{
+																														ctor: '::',
+																														_0: _elm_lang$html$Html_Events$onClick(
+																															_user$project$Main$Send(
+																																_user$project$Main$encodeOutMsg(_user$project$Main$ROS5))),
+																														_1: {ctor: '[]'}
+																													},
+																													{
+																														ctor: '::',
+																														_0: _elm_lang$html$Html$text('ROS5'),
+																														_1: {ctor: '[]'}
+																													}),
+																												_1: {
+																													ctor: '::',
+																													_0: A2(
+																														_elm_lang$html$Html$button,
+																														{
+																															ctor: '::',
+																															_0: _elm_lang$html$Html_Events$onClick(
+																																_user$project$Main$Send(
+																																	_user$project$Main$encodeOutMsg(_user$project$Main$Memoriam))),
+																															_1: {ctor: '[]'}
+																														},
+																														{
+																															ctor: '::',
+																															_0: _elm_lang$html$Html$text('memoriam'),
+																															_1: {ctor: '[]'}
+																														}),
+																													_1: {
+																														ctor: '::',
+																														_0: A2(
+																															_elm_lang$html$Html$button,
+																															{
+																																ctor: '::',
+																																_0: _elm_lang$html$Html_Events$onClick(
+																																	_user$project$Main$Send(
+																																		_user$project$Main$encodeOutMsg(_user$project$Main$PaperPlane4))),
+																																_1: {ctor: '[]'}
+																															},
+																															{
+																																ctor: '::',
+																																_0: _elm_lang$html$Html$text('paperplane4'),
+																																_1: {ctor: '[]'}
+																															}),
+																														_1: {
+																															ctor: '::',
+																															_0: A2(
+																																_elm_lang$html$Html$button,
+																																{
+																																	ctor: '::',
+																																	_0: _elm_lang$html$Html_Events$onClick(
+																																		_user$project$Main$Send(
+																																			_user$project$Main$encodeOutMsg(_user$project$Main$PaperPlane5))),
+																																	_1: {ctor: '[]'}
+																																},
+																																{
+																																	ctor: '::',
+																																	_0: _elm_lang$html$Html$text('paperplane5'),
+																																	_1: {ctor: '[]'}
+																																}),
+																															_1: {
+																																ctor: '::',
+																																_0: A2(
+																																	_elm_lang$html$Html$button,
+																																	{
+																																		ctor: '::',
+																																		_0: _elm_lang$html$Html_Events$onClick(
+																																			_user$project$Main$Send(
+																																				_user$project$Main$encodeOutMsg(_user$project$Main$Glitch2))),
+																																		_1: {ctor: '[]'}
+																																	},
+																																	{
+																																		ctor: '::',
+																																		_0: _elm_lang$html$Html$text('glitch2'),
+																																		_1: {ctor: '[]'}
+																																	}),
+																																_1: {
+																																	ctor: '::',
+																																	_0: A2(
+																																		_elm_lang$html$Html$button,
+																																		{
+																																			ctor: '::',
+																																			_0: _elm_lang$html$Html_Events$onClick(
+																																				_user$project$Main$Send(
+																																					_user$project$Main$encodeOutMsg(_user$project$Main$FilmBreak2))),
+																																			_1: {ctor: '[]'}
+																																		},
+																																		{
+																																			ctor: '::',
+																																			_0: _elm_lang$html$Html$text('filmbreak2'),
+																																			_1: {ctor: '[]'}
+																																		}),
+																																	_1: {
+																																		ctor: '::',
+																																		_0: A2(
+																																			_elm_lang$html$Html$button,
+																																			{
+																																				ctor: '::',
+																																				_0: _elm_lang$html$Html_Events$onClick(
+																																					_user$project$Main$Send(
+																																						_user$project$Main$encodeOutMsg(_user$project$Main$OperaLoading))),
+																																				_1: {ctor: '[]'}
+																																			},
+																																			{
+																																				ctor: '::',
+																																				_0: _elm_lang$html$Html$text('opera loading'),
+																																				_1: {ctor: '[]'}
+																																			}),
+																																		_1: {
+																																			ctor: '::',
+																																			_0: A2(
+																																				_elm_lang$html$Html$button,
+																																				{
+																																					ctor: '::',
+																																					_0: _elm_lang$html$Html_Events$onClick(
+																																						_user$project$Main$Send(
+																																							_user$project$Main$encodeOutMsg(_user$project$Main$Opera))),
+																																					_1: {ctor: '[]'}
+																																				},
+																																				{
+																																					ctor: '::',
+																																					_0: _elm_lang$html$Html$text('opera'),
+																																					_1: {ctor: '[]'}
+																																				}),
+																																			_1: {
+																																				ctor: '::',
+																																				_0: A2(
+																																					_elm_lang$html$Html$button,
+																																					{
+																																						ctor: '::',
+																																						_0: _elm_lang$html$Html_Events$onClick(
+																																							_user$project$Main$Send(
+																																								_user$project$Main$encodeOutMsg(_user$project$Main$EndingB))),
+																																						_1: {ctor: '[]'}
+																																					},
+																																					{
+																																						ctor: '::',
+																																						_0: _elm_lang$html$Html$text('endingb'),
+																																						_1: {ctor: '[]'}
+																																					}),
+																																				_1: {
+																																					ctor: '::',
+																																					_0: A2(
+																																						_elm_lang$html$Html$button,
+																																						{
+																																							ctor: '::',
+																																							_0: _elm_lang$html$Html_Events$onClick(
+																																								_user$project$Main$Send(
+																																									_user$project$Main$encodeOutMsg(_user$project$Main$EndingC))),
+																																							_1: {ctor: '[]'}
+																																						},
+																																						{
+																																							ctor: '::',
+																																							_0: _elm_lang$html$Html$text('endingc'),
+																																							_1: {ctor: '[]'}
+																																						}),
+																																					_1: {
+																																						ctor: '::',
+																																						_0: A2(
+																																							_elm_lang$html$Html$button,
+																																							{
+																																								ctor: '::',
+																																								_0: _elm_lang$html$Html_Events$onClick(
+																																									_user$project$Main$Send(
+																																										_user$project$Main$encodeOutMsg(_user$project$Main$HauntedHouseEnd))),
+																																								_1: {ctor: '[]'}
+																																							},
+																																							{
+																																								ctor: '::',
+																																								_0: _elm_lang$html$Html$text('haunted'),
+																																								_1: {ctor: '[]'}
+																																							}),
+																																						_1: {
+																																							ctor: '::',
+																																							_0: A2(
+																																								_elm_lang$html$Html$button,
+																																								{
+																																									ctor: '::',
+																																									_0: _elm_lang$html$Html_Events$onClick(
+																																										_user$project$Main$Send(
+																																											_user$project$Main$encodeOutMsg(_user$project$Main$EndCredits))),
+																																									_1: {ctor: '[]'}
+																																								},
+																																								{
+																																									ctor: '::',
+																																									_0: _elm_lang$html$Html$text('end'),
+																																									_1: {ctor: '[]'}
+																																								}),
+																																							_1: {
+																																								ctor: '::',
+																																								_0: A2(
+																																									_elm_lang$html$Html$button,
+																																									{
+																																										ctor: '::',
+																																										_0: _elm_lang$html$Html_Events$onClick(
+																																											_user$project$Main$Send(
+																																												_user$project$Main$encodeOutMsg(_user$project$Main$QA))),
+																																										_1: {ctor: '[]'}
+																																									},
+																																									{
+																																										ctor: '::',
+																																										_0: _elm_lang$html$Html$text('qa'),
+																																										_1: {ctor: '[]'}
+																																									}),
+																																								_1: {ctor: '[]'}
+																																							}
+																																						}
+																																					}
+																																				}
+																																			}
+																																		}
+																																	}
+																																}
+																															}
+																														}
+																													}
+																												}
+																											}
+																										}
+																									}
+																								}
+																							}
+																						}
+																					}
+																				}
+																			}
+																		}
+																	}
+																}
+															}
+														}
+													}
+												}),
+											_1: {ctor: '[]'}
+										}
 									}
 								}
 							}
