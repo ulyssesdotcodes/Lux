@@ -9,6 +9,10 @@ import Navigation exposing (..)
 import Task exposing (..)
 import WebSocket
 
+import SharedStyles exposing (..)
+
+{ id, class, classList } = hNamespace
+
 
 main =
   Navigation.program SetLocation
@@ -121,7 +125,7 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-  div [] <| [] ++
+  div [class [VotesGroup]] <| [p [] [text "LUX wants ", u [] [text "you"], text " to have the most ", sup [] [text "FUN"]]] ++
     case model.connected of
       True -> indexedMap (\i t -> button ([onClick <| ChooseVote i] ++ [disabled <| withDefault False <| Maybe.map ((/=) i) model.votedNum]) [text t]) model.votes
       False ->
