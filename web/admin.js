@@ -10092,6 +10092,26 @@ var _user$project$Main$viewMessage = function (msg) {
 			_1: {ctor: '[]'}
 		});
 };
+var _user$project$Main$button = function (a) {
+	return _elm_lang$html$Html$button(
+		A2(
+			_elm_lang$core$Basics_ops['++'],
+			{
+				ctor: '::',
+				_0: _elm_lang$html$Html_Attributes$style(
+					{
+						ctor: '::',
+						_0: {ctor: '_Tuple2', _0: 'font-size', _1: '1em'},
+						_1: {
+							ctor: '::',
+							_0: {ctor: '_Tuple2', _0: 'height', _1: 'auto'},
+							_1: {ctor: '[]'}
+						}
+					}),
+				_1: {ctor: '[]'}
+			},
+			a));
+};
 var _user$project$Main$wsloc = function (loc) {
 	return A2(
 		_elm_lang$core$Basics_ops['++'],
@@ -10163,7 +10183,15 @@ var _user$project$Main$encodeOutMsg = function (msg) {
 										_0: 'question',
 										_1: _elm_lang$core$Json_Encode$string(_p1._1)
 									},
-									_1: {ctor: '[]'}
+									_1: {
+										ctor: '::',
+										_0: {
+											ctor: '_Tuple2',
+											_0: 'colored',
+											_1: _elm_lang$core$Json_Encode$bool(_p1._3)
+										},
+										_1: {ctor: '[]'}
+									}
 								}
 							}
 						});
@@ -10320,9 +10348,9 @@ var _user$project$Main$Reset = {ctor: 'Reset'};
 var _user$project$Main$ForceVote = function (a) {
 	return {ctor: 'ForceVote', _0: a};
 };
-var _user$project$Main$NextVote = F3(
-	function (a, b, c) {
-		return {ctor: 'NextVote', _0: a, _1: b, _2: c};
+var _user$project$Main$NextVote = F4(
+	function (a, b, c, d) {
+		return {ctor: 'NextVote', _0: a, _1: b, _2: c, _3: d};
 	});
 var _user$project$Main$Connecting = {ctor: 'Connecting'};
 var _user$project$Main$PasswordResult = F4(
@@ -10518,7 +10546,7 @@ var _user$project$Main$view = function (model) {
 								{
 									ctor: '::',
 									_0: A2(
-										_elm_lang$html$Html$button,
+										_user$project$Main$button,
 										{
 											ctor: '::',
 											_0: _elm_lang$html$Html_Events$onClick(
@@ -10534,7 +10562,7 @@ var _user$project$Main$view = function (model) {
 									_1: {
 										ctor: '::',
 										_0: A2(
-											_elm_lang$html$Html$button,
+											_user$project$Main$button,
 											{
 												ctor: '::',
 												_0: _elm_lang$html$Html_Events$onClick(
@@ -10551,7 +10579,7 @@ var _user$project$Main$view = function (model) {
 										_1: {
 											ctor: '::',
 											_0: A2(
-												_elm_lang$html$Html$button,
+												_user$project$Main$button,
 												{
 													ctor: '::',
 													_0: _elm_lang$html$Html_Events$onClick(
@@ -10586,7 +10614,7 @@ var _user$project$Main$view = function (model) {
 									{
 										ctor: '::',
 										_0: A2(
-											_elm_lang$html$Html$button,
+											_user$project$Main$button,
 											{
 												ctor: '::',
 												_0: _elm_lang$html$Html_Events$onClick(
@@ -10602,7 +10630,7 @@ var _user$project$Main$view = function (model) {
 										_1: {
 											ctor: '::',
 											_0: A2(
-												_elm_lang$html$Html$button,
+												_user$project$Main$button,
 												{
 													ctor: '::',
 													_0: _elm_lang$html$Html_Events$onClick(
@@ -10618,7 +10646,7 @@ var _user$project$Main$view = function (model) {
 											_1: {
 												ctor: '::',
 												_0: A2(
-													_elm_lang$html$Html$button,
+													_user$project$Main$button,
 													{
 														ctor: '::',
 														_0: _elm_lang$html$Html_Events$onClick(
@@ -10634,7 +10662,7 @@ var _user$project$Main$view = function (model) {
 												_1: {
 													ctor: '::',
 													_0: A2(
-														_elm_lang$html$Html$button,
+														_user$project$Main$button,
 														{
 															ctor: '::',
 															_0: _elm_lang$html$Html_Events$onClick(
@@ -10650,7 +10678,7 @@ var _user$project$Main$view = function (model) {
 													_1: {
 														ctor: '::',
 														_0: A2(
-															_elm_lang$html$Html$button,
+															_user$project$Main$button,
 															{
 																ctor: '::',
 																_0: _elm_lang$html$Html_Events$onClick(
@@ -10686,13 +10714,13 @@ var _user$project$Main$view = function (model) {
 										{
 											ctor: '::',
 											_0: A2(
-												_elm_lang$html$Html$button,
+												_user$project$Main$button,
 												{
 													ctor: '::',
 													_0: _elm_lang$html$Html_Events$onClick(
 														_user$project$Main$Send(
 															_user$project$Main$encodeOutMsg(
-																A3(
+																A4(
 																	_user$project$Main$NextVote,
 																	_user$project$Main$Show,
 																	'Do you know what\'s fun? Hobbies! Which of these hobbies sounds more FUN to you?',
@@ -10704,7 +10732,8 @@ var _user$project$Main$view = function (model) {
 																			_0: 1,
 																			_1: {ctor: '[]'}
 																		}
-																	})))),
+																	},
+																	false)))),
 													_1: {ctor: '[]'}
 												},
 												{
@@ -10715,13 +10744,13 @@ var _user$project$Main$view = function (model) {
 											_1: {
 												ctor: '::',
 												_0: A2(
-													_elm_lang$html$Html$button,
+													_user$project$Main$button,
 													{
 														ctor: '::',
 														_0: _elm_lang$html$Html_Events$onClick(
 															_user$project$Main$Send(
 																_user$project$Main$encodeOutMsg(
-																	A3(
+																	A4(
 																		_user$project$Main$NextVote,
 																		_user$project$Main$Show,
 																		'Let\'s play a game! What skill is most important to you?',
@@ -10737,7 +10766,8 @@ var _user$project$Main$view = function (model) {
 																					_1: {ctor: '[]'}
 																				}
 																			}
-																		})))),
+																		},
+																		false)))),
 														_1: {ctor: '[]'}
 													},
 													{
@@ -10748,13 +10778,13 @@ var _user$project$Main$view = function (model) {
 												_1: {
 													ctor: '::',
 													_0: A2(
-														_elm_lang$html$Html$button,
+														_user$project$Main$button,
 														{
 															ctor: '::',
 															_0: _elm_lang$html$Html_Events$onClick(
 																_user$project$Main$Send(
 																	_user$project$Main$encodeOutMsg(
-																		A3(
+																		A4(
 																			_user$project$Main$NextVote,
 																			_user$project$Main$Show,
 																			'It\'s time for a change in scenery! Which of these themes interests you the most?',
@@ -10770,7 +10800,8 @@ var _user$project$Main$view = function (model) {
 																						_1: {ctor: '[]'}
 																					}
 																				}
-																			})))),
+																			},
+																			false)))),
 															_1: {ctor: '[]'}
 														},
 														{
@@ -10781,13 +10812,13 @@ var _user$project$Main$view = function (model) {
 													_1: {
 														ctor: '::',
 														_0: A2(
-															_elm_lang$html$Html$button,
+															_user$project$Main$button,
 															{
 																ctor: '::',
 																_0: _elm_lang$html$Html_Events$onClick(
 																	_user$project$Main$Send(
 																		_user$project$Main$encodeOutMsg(
-																			A3(
+																			A4(
 																				_user$project$Main$NextVote,
 																				_user$project$Main$Show,
 																				'Many things in the world are funny! Which of these things do you find to be FUNny?',
@@ -10803,81 +10834,119 @@ var _user$project$Main$view = function (model) {
 																							_1: {ctor: '[]'}
 																						}
 																					}
-																				})))),
+																				},
+																				false)))),
 																_1: {ctor: '[]'}
 															},
 															{
 																ctor: '::',
-																_0: _elm_lang$html$Html$text('Show Vote 4'),
+																_0: _elm_lang$html$Html$text('Show Vote Comedian'),
 																_1: {ctor: '[]'}
 															}),
 														_1: {
 															ctor: '::',
 															_0: A2(
-																_elm_lang$html$Html$button,
+																_user$project$Main$button,
 																{
 																	ctor: '::',
 																	_0: _elm_lang$html$Html_Events$onClick(
 																		_user$project$Main$Send(
 																			_user$project$Main$encodeOutMsg(
-																				A3(
+																				A4(
 																					_user$project$Main$NextVote,
 																					_user$project$Main$Show,
-																					'VOTE[FUN] Option@*&#$@%... … (&@^% PLEASE @*#(&# THANK YOU',
+																					'In order to restore FUN levels to 110% please choose one of the following thank you',
 																					{
 																						ctor: '::',
-																						_0: 11,
+																						_0: 17,
 																						_1: {
 																							ctor: '::',
-																							_0: 12,
+																							_0: 18,
 																							_1: {
 																								ctor: '::',
-																								_0: 13,
+																								_0: 19,
 																								_1: {ctor: '[]'}
 																							}
 																						}
-																					})))),
+																					},
+																					false)))),
 																	_1: {ctor: '[]'}
 																},
 																{
 																	ctor: '::',
-																	_0: _elm_lang$html$Html$text('Show Vote 5'),
+																	_0: _elm_lang$html$Html$text('Show Vote 4'),
 																	_1: {ctor: '[]'}
 																}),
 															_1: {
 																ctor: '::',
 																_0: A2(
-																	_elm_lang$html$Html$button,
+																	_user$project$Main$button,
 																	{
 																		ctor: '::',
 																		_0: _elm_lang$html$Html_Events$onClick(
 																			_user$project$Main$Send(
 																				_user$project$Main$encodeOutMsg(
-																					A3(
+																					A4(
 																						_user$project$Main$NextVote,
 																						_user$project$Main$Show,
-																						'When experiencing technical issues, nothing is more FUN then self-improvement! How would you like to improve yourself?',
+																						'VOTE[FUN] Option@*&#$@%... … (&@^% PLEASE @*#(&# THANK YOU',
 																						{
 																							ctor: '::',
-																							_0: 14,
+																							_0: 11,
 																							_1: {
 																								ctor: '::',
-																								_0: 15,
+																								_0: 12,
 																								_1: {
 																									ctor: '::',
-																									_0: 16,
+																									_0: 13,
 																									_1: {ctor: '[]'}
 																								}
 																							}
-																						})))),
+																						},
+																						true)))),
 																		_1: {ctor: '[]'}
 																	},
 																	{
 																		ctor: '::',
-																		_0: _elm_lang$html$Html$text('Show Vote 6'),
+																		_0: _elm_lang$html$Html$text('Show Vote 5'),
 																		_1: {ctor: '[]'}
 																	}),
-																_1: {ctor: '[]'}
+																_1: {
+																	ctor: '::',
+																	_0: A2(
+																		_user$project$Main$button,
+																		{
+																			ctor: '::',
+																			_0: _elm_lang$html$Html_Events$onClick(
+																				_user$project$Main$Send(
+																					_user$project$Main$encodeOutMsg(
+																						A4(
+																							_user$project$Main$NextVote,
+																							_user$project$Main$Show,
+																							'When experiencing technical issues, nothing is more FUN then self-improvement! How would you like to improve yourself?',
+																							{
+																								ctor: '::',
+																								_0: 14,
+																								_1: {
+																									ctor: '::',
+																									_0: 15,
+																									_1: {
+																										ctor: '::',
+																										_0: 16,
+																										_1: {ctor: '[]'}
+																									}
+																								}
+																							},
+																							true)))),
+																			_1: {ctor: '[]'}
+																		},
+																		{
+																			ctor: '::',
+																			_0: _elm_lang$html$Html$text('Show Vote 6'),
+																			_1: {ctor: '[]'}
+																		}),
+																	_1: {ctor: '[]'}
+																}
 															}
 														}
 													}
@@ -10901,13 +10970,13 @@ var _user$project$Main$view = function (model) {
 											{
 												ctor: '::',
 												_0: A2(
-													_elm_lang$html$Html$button,
+													_user$project$Main$button,
 													{
 														ctor: '::',
 														_0: _elm_lang$html$Html_Events$onClick(
 															_user$project$Main$Send(
 																_user$project$Main$encodeOutMsg(
-																	A3(
+																	A4(
 																		_user$project$Main$NextVote,
 																		_user$project$Main$Film,
 																		'',
@@ -10919,7 +10988,8 @@ var _user$project$Main$view = function (model) {
 																				_0: 9,
 																				_1: {ctor: '[]'}
 																			}
-																		})))),
+																		},
+																		false)))),
 														_1: {ctor: '[]'}
 													},
 													{
@@ -10930,13 +11000,13 @@ var _user$project$Main$view = function (model) {
 												_1: {
 													ctor: '::',
 													_0: A2(
-														_elm_lang$html$Html$button,
+														_user$project$Main$button,
 														{
 															ctor: '::',
 															_0: _elm_lang$html$Html_Events$onClick(
 																_user$project$Main$Send(
 																	_user$project$Main$encodeOutMsg(
-																		A3(
+																		A4(
 																			_user$project$Main$NextVote,
 																			_user$project$Main$Film,
 																			'',
@@ -10952,7 +11022,8 @@ var _user$project$Main$view = function (model) {
 																						_1: {ctor: '[]'}
 																					}
 																				}
-																			})))),
+																			},
+																			false)))),
 															_1: {ctor: '[]'}
 														},
 														{
@@ -10963,13 +11034,13 @@ var _user$project$Main$view = function (model) {
 													_1: {
 														ctor: '::',
 														_0: A2(
-															_elm_lang$html$Html$button,
+															_user$project$Main$button,
 															{
 																ctor: '::',
 																_0: _elm_lang$html$Html_Events$onClick(
 																	_user$project$Main$Send(
 																		_user$project$Main$encodeOutMsg(
-																			A3(
+																			A4(
 																				_user$project$Main$NextVote,
 																				_user$project$Main$Film,
 																				'',
@@ -10997,7 +11068,8 @@ var _user$project$Main$view = function (model) {
 																							}
 																						}
 																					}
-																				})))),
+																				},
+																				false)))),
 																_1: {ctor: '[]'}
 															},
 															{
@@ -11008,13 +11080,13 @@ var _user$project$Main$view = function (model) {
 														_1: {
 															ctor: '::',
 															_0: A2(
-																_elm_lang$html$Html$button,
+																_user$project$Main$button,
 																{
 																	ctor: '::',
 																	_0: _elm_lang$html$Html_Events$onClick(
 																		_user$project$Main$Send(
 																			_user$project$Main$encodeOutMsg(
-																				A3(
+																				A4(
 																					_user$project$Main$NextVote,
 																					_user$project$Main$Film,
 																					'',
@@ -11046,7 +11118,8 @@ var _user$project$Main$view = function (model) {
 																								}
 																							}
 																						}
-																					})))),
+																					},
+																					false)))),
 																	_1: {ctor: '[]'}
 																},
 																{
@@ -11057,13 +11130,13 @@ var _user$project$Main$view = function (model) {
 															_1: {
 																ctor: '::',
 																_0: A2(
-																	_elm_lang$html$Html$button,
+																	_user$project$Main$button,
 																	{
 																		ctor: '::',
 																		_0: _elm_lang$html$Html_Events$onClick(
 																			_user$project$Main$Send(
 																				_user$project$Main$encodeOutMsg(
-																					A3(
+																					A4(
 																						_user$project$Main$NextVote,
 																						_user$project$Main$Film,
 																						'',
@@ -11099,7 +11172,8 @@ var _user$project$Main$view = function (model) {
 																									}
 																								}
 																							}
-																						})))),
+																						},
+																						false)))),
 																		_1: {ctor: '[]'}
 																	},
 																	{
@@ -11110,13 +11184,13 @@ var _user$project$Main$view = function (model) {
 																_1: {
 																	ctor: '::',
 																	_0: A2(
-																		_elm_lang$html$Html$button,
+																		_user$project$Main$button,
 																		{
 																			ctor: '::',
 																			_0: _elm_lang$html$Html_Events$onClick(
 																				_user$project$Main$Send(
 																					_user$project$Main$encodeOutMsg(
-																						A3(
+																						A4(
 																							_user$project$Main$NextVote,
 																							_user$project$Main$Film,
 																							'',
@@ -11152,7 +11226,8 @@ var _user$project$Main$view = function (model) {
 																										}
 																									}
 																								}
-																							})))),
+																							},
+																							false)))),
 																			_1: {ctor: '[]'}
 																		},
 																		{
@@ -11163,13 +11238,13 @@ var _user$project$Main$view = function (model) {
 																	_1: {
 																		ctor: '::',
 																		_0: A2(
-																			_elm_lang$html$Html$button,
+																			_user$project$Main$button,
 																			{
 																				ctor: '::',
 																				_0: _elm_lang$html$Html_Events$onClick(
 																					_user$project$Main$Send(
 																						_user$project$Main$encodeOutMsg(
-																							A3(
+																							A4(
 																								_user$project$Main$NextVote,
 																								_user$project$Main$Film,
 																								'',
@@ -11213,7 +11288,8 @@ var _user$project$Main$view = function (model) {
 																											}
 																										}
 																									}
-																								})))),
+																								},
+																								false)))),
 																				_1: {ctor: '[]'}
 																			},
 																			{
@@ -11224,13 +11300,13 @@ var _user$project$Main$view = function (model) {
 																		_1: {
 																			ctor: '::',
 																			_0: A2(
-																				_elm_lang$html$Html$button,
+																				_user$project$Main$button,
 																				{
 																					ctor: '::',
 																					_0: _elm_lang$html$Html_Events$onClick(
 																						_user$project$Main$Send(
 																							_user$project$Main$encodeOutMsg(
-																								A3(
+																								A4(
 																									_user$project$Main$NextVote,
 																									_user$project$Main$Film,
 																									'',
@@ -11258,7 +11334,8 @@ var _user$project$Main$view = function (model) {
 																												}
 																											}
 																										}
-																									})))),
+																									},
+																									false)))),
 																					_1: {ctor: '[]'}
 																				},
 																				{
@@ -11269,13 +11346,13 @@ var _user$project$Main$view = function (model) {
 																			_1: {
 																				ctor: '::',
 																				_0: A2(
-																					_elm_lang$html$Html$button,
+																					_user$project$Main$button,
 																					{
 																						ctor: '::',
 																						_0: _elm_lang$html$Html_Events$onClick(
 																							_user$project$Main$Send(
 																								_user$project$Main$encodeOutMsg(
-																									A3(
+																									A4(
 																										_user$project$Main$NextVote,
 																										_user$project$Main$Film,
 																										'',
@@ -11319,7 +11396,8 @@ var _user$project$Main$view = function (model) {
 																													}
 																												}
 																											}
-																										})))),
+																										},
+																										true)))),
 																						_1: {ctor: '[]'}
 																					},
 																					{
@@ -11330,13 +11408,13 @@ var _user$project$Main$view = function (model) {
 																				_1: {
 																					ctor: '::',
 																					_0: A2(
-																						_elm_lang$html$Html$button,
+																						_user$project$Main$button,
 																						{
 																							ctor: '::',
 																							_0: _elm_lang$html$Html_Events$onClick(
 																								_user$project$Main$Send(
 																									_user$project$Main$encodeOutMsg(
-																										A3(
+																										A4(
 																											_user$project$Main$NextVote,
 																											_user$project$Main$Film,
 																											'',
@@ -11384,7 +11462,8 @@ var _user$project$Main$view = function (model) {
 																														}
 																													}
 																												}
-																											})))),
+																											},
+																											true)))),
 																							_1: {ctor: '[]'}
 																						},
 																						{
@@ -11395,13 +11474,13 @@ var _user$project$Main$view = function (model) {
 																					_1: {
 																						ctor: '::',
 																						_0: A2(
-																							_elm_lang$html$Html$button,
+																							_user$project$Main$button,
 																							{
 																								ctor: '::',
 																								_0: _elm_lang$html$Html_Events$onClick(
 																									_user$project$Main$Send(
 																										_user$project$Main$encodeOutMsg(
-																											A3(
+																											A4(
 																												_user$project$Main$NextVote,
 																												_user$project$Main$Film,
 																												'',
@@ -11449,7 +11528,8 @@ var _user$project$Main$view = function (model) {
 																															}
 																														}
 																													}
-																												})))),
+																												},
+																												true)))),
 																								_1: {ctor: '[]'}
 																							},
 																							{
@@ -11460,13 +11540,13 @@ var _user$project$Main$view = function (model) {
 																						_1: {
 																							ctor: '::',
 																							_0: A2(
-																								_elm_lang$html$Html$button,
+																								_user$project$Main$button,
 																								{
 																									ctor: '::',
 																									_0: _elm_lang$html$Html_Events$onClick(
 																										_user$project$Main$Send(
 																											_user$project$Main$encodeOutMsg(
-																												A3(
+																												A4(
 																													_user$project$Main$NextVote,
 																													_user$project$Main$Film,
 																													'',
@@ -11518,7 +11598,8 @@ var _user$project$Main$view = function (model) {
 																																}
 																															}
 																														}
-																													})))),
+																													},
+																													true)))),
 																									_1: {ctor: '[]'}
 																								},
 																								{
@@ -11529,13 +11610,13 @@ var _user$project$Main$view = function (model) {
 																							_1: {
 																								ctor: '::',
 																								_0: A2(
-																									_elm_lang$html$Html$button,
+																									_user$project$Main$button,
 																									{
 																										ctor: '::',
 																										_0: _elm_lang$html$Html_Events$onClick(
 																											_user$project$Main$Send(
 																												_user$project$Main$encodeOutMsg(
-																													A3(
+																													A4(
 																														_user$project$Main$NextVote,
 																														_user$project$Main$Film,
 																														'',
@@ -11587,7 +11668,8 @@ var _user$project$Main$view = function (model) {
 																																	}
 																																}
 																															}
-																														})))),
+																														},
+																														true)))),
 																										_1: {ctor: '[]'}
 																									},
 																									{
@@ -11598,13 +11680,13 @@ var _user$project$Main$view = function (model) {
 																								_1: {
 																									ctor: '::',
 																									_0: A2(
-																										_elm_lang$html$Html$button,
+																										_user$project$Main$button,
 																										{
 																											ctor: '::',
 																											_0: _elm_lang$html$Html_Events$onClick(
 																												_user$project$Main$Send(
 																													_user$project$Main$encodeOutMsg(
-																														A3(
+																														A4(
 																															_user$project$Main$NextVote,
 																															_user$project$Main$Film,
 																															'',
@@ -11668,7 +11750,8 @@ var _user$project$Main$view = function (model) {
 																																		}
 																																	}
 																																}
-																															})))),
+																															},
+																															true)))),
 																											_1: {ctor: '[]'}
 																										},
 																										{
@@ -11679,13 +11762,13 @@ var _user$project$Main$view = function (model) {
 																									_1: {
 																										ctor: '::',
 																										_0: A2(
-																											_elm_lang$html$Html$button,
+																											_user$project$Main$button,
 																											{
 																												ctor: '::',
 																												_0: _elm_lang$html$Html_Events$onClick(
 																													_user$project$Main$Send(
 																														_user$project$Main$encodeOutMsg(
-																															A3(
+																															A4(
 																																_user$project$Main$NextVote,
 																																_user$project$Main$Film,
 																																'',
@@ -11705,7 +11788,8 @@ var _user$project$Main$view = function (model) {
 																																			}
 																																		}
 																																	}
-																																})))),
+																																},
+																																false)))),
 																												_1: {ctor: '[]'}
 																											},
 																											{
@@ -11716,13 +11800,13 @@ var _user$project$Main$view = function (model) {
 																										_1: {
 																											ctor: '::',
 																											_0: A2(
-																												_elm_lang$html$Html$button,
+																												_user$project$Main$button,
 																												{
 																													ctor: '::',
 																													_0: _elm_lang$html$Html_Events$onClick(
 																														_user$project$Main$Send(
 																															_user$project$Main$encodeOutMsg(
-																																A3(
+																																A4(
 																																	_user$project$Main$NextVote,
 																																	_user$project$Main$Film,
 																																	'',
@@ -11742,7 +11826,8 @@ var _user$project$Main$view = function (model) {
 																																				}
 																																			}
 																																		}
-																																	})))),
+																																	},
+																																	false)))),
 																													_1: {ctor: '[]'}
 																												},
 																												{
@@ -11753,13 +11838,13 @@ var _user$project$Main$view = function (model) {
 																											_1: {
 																												ctor: '::',
 																												_0: A2(
-																													_elm_lang$html$Html$button,
+																													_user$project$Main$button,
 																													{
 																														ctor: '::',
 																														_0: _elm_lang$html$Html_Events$onClick(
 																															_user$project$Main$Send(
 																																_user$project$Main$encodeOutMsg(
-																																	A3(
+																																	A4(
 																																		_user$project$Main$NextVote,
 																																		_user$project$Main$Film,
 																																		'',
@@ -11771,7 +11856,8 @@ var _user$project$Main$view = function (model) {
 																																				_0: 18,
 																																				_1: {ctor: '[]'}
 																																			}
-																																		})))),
+																																		},
+																																		false)))),
 																														_1: {ctor: '[]'}
 																													},
 																													{
@@ -11782,13 +11868,13 @@ var _user$project$Main$view = function (model) {
 																												_1: {
 																													ctor: '::',
 																													_0: A2(
-																														_elm_lang$html$Html$button,
+																														_user$project$Main$button,
 																														{
 																															ctor: '::',
 																															_0: _elm_lang$html$Html_Events$onClick(
 																																_user$project$Main$Send(
 																																	_user$project$Main$encodeOutMsg(
-																																		A3(
+																																		A4(
 																																			_user$project$Main$NextVote,
 																																			_user$project$Main$Film,
 																																			'',
@@ -11804,7 +11890,8 @@ var _user$project$Main$view = function (model) {
 																																						_1: {ctor: '[]'}
 																																					}
 																																				}
-																																			})))),
+																																			},
+																																			false)))),
 																															_1: {ctor: '[]'}
 																														},
 																														{
@@ -11849,7 +11936,7 @@ var _user$project$Main$view = function (model) {
 													_elm_lang$core$List$map,
 													function (vc) {
 														return A2(
-															_elm_lang$html$Html$button,
+															_user$project$Main$button,
 															{
 																ctor: '::',
 																_0: _elm_lang$html$Html_Events$onClick(
@@ -11883,7 +11970,7 @@ var _user$project$Main$view = function (model) {
 														_elm_lang$core$List$map,
 														function (ac) {
 															return A2(
-																_elm_lang$html$Html$button,
+																_user$project$Main$button,
 																{
 																	ctor: '::',
 																	_0: _elm_lang$html$Html_Events$onClick(
@@ -11918,7 +12005,7 @@ var _user$project$Main$view = function (model) {
 															function (_p7) {
 																var _p8 = _p7;
 																return A2(
-																	_elm_lang$html$Html$button,
+																	_user$project$Main$button,
 																	{
 																		ctor: '::',
 																		_0: _elm_lang$html$Html_Events$onClick(

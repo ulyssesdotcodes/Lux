@@ -35,7 +35,7 @@ type alias Model =
   }
 
 type OutgoingMsg = Connecting
-                 | NextVote VoteType String (List Int)
+                 | NextVote VoteType String (List Int) Bool
                  | ForceVote Int
                  | Reset
                  | KitchenScene
@@ -92,10 +92,11 @@ encodeOutMsg msg =
   encode 0 <|
     case msg of
       Connecting -> Json.Encode.object [("type", Json.Encode.string "connecting"), ("password", Json.Encode.string "password")]
-      NextVote ty q is->
+      NextVote ty q is b ->
         Json.Encode.object [ ("type", Json.Encode.string <| "do" ++ voteType ty ++ "Vote")
                            , ("votes", Json.Encode.list <| List.map Json.Encode.int is)
                            , ("question", Json.Encode.string q)
+                           , ("colored", Json.Encode.bool b)
                            ]
       ForceVote i -> Json.Encode.object [("type", Json.Encode.string "forceFilmVote"), ("vote", Json.Encode.int i)]
       Reset -> Json.Encode.object [("type", Json.Encode.string "reset")]
@@ -194,6 +195,8 @@ subscriptions model =
 
 
 -- VIEW
+button a = Html.button ([style [("font-size", "1em"), ("height", "auto")]] ++ a)
+
 view : Model -> Html Msg
 view model =
   div [] <|
@@ -212,32 +215,33 @@ view model =
         , button [onClick (Send <| encodeOutMsg Reel2)] [text "Reel2"]
         ]
       , div [class [ControlGroup]]
-        [ button [onClick (Send <| encodeOutMsg <| NextVote Show "Do you know what's fun? Hobbies! Which of these hobbies sounds more FUN to you?" [0, 1] )] [text "Show Vote 1"]
-        , button [onClick (Send <| encodeOutMsg <| NextVote Show "Let's play a game! What skill is most important to you?" [2, 3, 4] )] [text "Show Vote 2"]
-        , button [onClick (Send <| encodeOutMsg <| NextVote Show "It's time for a change in scenery! Which of these themes interests you the most?" [5, 6, 7] )] [text "Show Vote 3"]
-        , button [onClick (Send <| encodeOutMsg <| NextVote Show "Many things in the world are funny! Which of these things do you find to be FUNny?" [8, 9, 10] )] [text "Show Vote 4"]
-        , button [onClick (Send <| encodeOutMsg <| NextVote Show "VOTE[FUN] Option@*&#$@%... … (&@^% PLEASE @*#(&# THANK YOU" [11, 12, 13] )] [text "Show Vote 5"]
-        , button [onClick (Send <| encodeOutMsg <| NextVote Show "When experiencing technical issues, nothing is more FUN then self-improvement! How would you like to improve yourself?" [14, 15, 16] )] [text "Show Vote 6"]
+        [ button [onClick (Send <| encodeOutMsg <| NextVote Show "Do you know what's fun? Hobbies! Which of these hobbies sounds more FUN to you?" [0, 1] False)] [text "Show Vote 1"]
+        , button [onClick (Send <| encodeOutMsg <| NextVote Show "Let's play a game! What skill is most important to you?" [2, 3, 4] False )] [text "Show Vote 2"]
+        , button [onClick (Send <| encodeOutMsg <| NextVote Show "It's time for a change in scenery! Which of these themes interests you the most?" [5, 6, 7] False )] [text "Show Vote 3"]
+        , button [onClick (Send <| encodeOutMsg <| NextVote Show "Many things in the world are funny! Which of these things do you find to be FUNny?" [8, 9, 10] False )] [text "Show Vote Comedian"]
+        , button [onClick (Send <| encodeOutMsg <| NextVote Show "In order to restore FUN levels to 110% please choose one of the following thank you" [17, 18, 19] False )] [text "Show Vote 4"]
+        , button [onClick (Send <| encodeOutMsg <| NextVote Show "VOTE[FUN] Option@*&#$@%... … (&@^% PLEASE @*#(&# THANK YOU" [11, 12, 13] True )] [text "Show Vote 5"]
+        , button [onClick (Send <| encodeOutMsg <| NextVote Show "When experiencing technical issues, nothing is more FUN then self-improvement! How would you like to improve yourself?" [14, 15, 16] True)] [text "Show Vote 6"]
         ]
       , div [class [ControlGroup]]
-        [ button [onClick (Send <| encodeOutMsg <| NextVote Film "" [3, 9] )] [text "Film Vote 1"]
-        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [3, 8, 9] )] [text "Film Vote 2"]
-        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [3, 7, 8, 9, 11, 19] )] [text "Film Vote 3"]
-        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [3, 7, 8, 9, 11, 19, 20] )] [text "Film Vote 4"]
-        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [1, 3, 6, 9, 11, 12, 19, 20] )] [text "Film Vote 5"]
-        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [1, 3, 8, 9, 11, 12, 19, 20] )] [text "Film Vote 6"]
-        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [1, 2, 3, 8, 9, 11, 12, 19, 20, 21] )] [text "Film Vote 7"]
-        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [3, 8, 12, 19, 20, 21] )] [text "Film Vote 8"]
-        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [1, 2, 3, 8, 9, 11, 12, 19, 20, 21] )] [text "Film Vote 9"]
-        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [1, 2, 3, 8, 9, 11, 12, 16, 19, 20, 21] )] [text "Film Vote 10"]
-        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [1, 2, 3, 8, 9, 11, 12, 16, 19, 20, 21] )] [text "Film Vote 11"]
-        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [1, 2, 3, 8, 9, 11, 12, 14, 16, 19, 20, 21] )] [text "Film Vote 12"]
-        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [1, 2, 3, 8, 9, 11, 12, 14, 16, 19, 20, 21] )] [text "Film Vote 13"]
-        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [1, 2, 3, 4, 6, 7, 8, 9, 11, 12, 14, 16, 19, 20, 21] )] [text "Film Vote 14"]
-        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [1, 2, 9, 11] )] [text "Permutations"]
-        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [13, 14, 15, 16] )] [text "Alt cameras"]
-        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [17, 18] )] [text "overlays"]
-        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [19, 20, 21] )] [text "Soundtracks"]
+        [ button [onClick (Send <| encodeOutMsg <| NextVote Film "" [3, 9] False )] [text "Film Vote 1"]
+        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [3, 8, 9] False )] [text "Film Vote 2"]
+        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [3, 7, 8, 9, 11, 19] False )] [text "Film Vote 3"]
+        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [3, 7, 8, 9, 11, 19, 20] False )] [text "Film Vote 4"]
+        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [1, 3, 6, 9, 11, 12, 19, 20] False )] [text "Film Vote 5"]
+        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [1, 3, 8, 9, 11, 12, 19, 20] False )] [text "Film Vote 6"]
+        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [1, 2, 3, 8, 9, 11, 12, 19, 20, 21] False )] [text "Film Vote 7"]
+        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [3, 8, 12, 19, 20, 21] False )] [text "Film Vote 8"]
+        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [1, 2, 3, 8, 9, 11, 12, 19, 20, 21] True )] [text "Film Vote 9"]
+        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [1, 2, 3, 8, 9, 11, 12, 16, 19, 20, 21] True )] [text "Film Vote 10"]
+        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [1, 2, 3, 8, 9, 11, 12, 16, 19, 20, 21] True )] [text "Film Vote 11"]
+        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [1, 2, 3, 8, 9, 11, 12, 14, 16, 19, 20, 21] True )] [text "Film Vote 12"]
+        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [1, 2, 3, 8, 9, 11, 12, 14, 16, 19, 20, 21] True )] [text "Film Vote 13"]
+        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [1, 2, 3, 4, 6, 7, 8, 9, 11, 12, 14, 16, 19, 20, 21] True )] [text "Film Vote 14"]
+        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [1, 2, 9, 11] False )] [text "Permutations"]
+        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [13, 14, 15, 16] False )] [text "Alt cameras"]
+        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [17, 18] False )] [text "overlays"]
+        , button [onClick (Send <| encodeOutMsg <| NextVote Film "" [19, 20, 21] False )] [text "Soundtracks"]
         ]
       , div [class [ControlGroup]] (List.map (\vc -> button [onClick (Send <| encodeOutMsg <| RunCue vc)] [text vc]) model.vcues)
       , div [class [ControlGroup]] (List.map (\ac -> button [onClick (Send <| encodeOutMsg <| RunCue ac)] [text ac]) model.acues)

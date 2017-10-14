@@ -16,6 +16,7 @@ classes = {
   'nullTop' : (nullTOP, 'null', 'TOP'),
   'outTop' : (outTOP, 'out', 'TOP'),
   'render' : (renderTOP, 'render', 'TOP'),
+  'rectangleTop' : (rectangleTOP, 'rectangle', 'TOP'),
   'hsvAdjustTop' : (hsvadjustTOP, 'hsvadj', 'TOP'),
   'levelTop' : (levelTOP, 'level', 'TOP'),
   'transform' : (transformTOP, 'transform', 'TOP'),
