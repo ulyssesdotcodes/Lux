@@ -34,8 +34,8 @@ vec3 getVideo(vec2 uv)
 {
 	vec2 look = uv;
 	float window = 1./(1.+20.*(look.y-mod(i_time/4.,1.))*(look.y-mod(i_time/4.,1.)));
-	look.x = look.x + sin(look.y*10. + i_time)/50.*onOff(4.,4.,.3)*(1.+cos(i_time*80.))*window;
-	float vShift = 0.4*onOff(2.,3.,.9)*(sin(i_time)*sin(i_time*20.) + 
+	look.x = look.x + sin(look.y*0. + i_time)/50.*onOff(4.,4.,.3)*(1.+cos(i_time*80.))*window;
+	float vShift = 0.1*onOff(2.,3.,.9)*(sin(i_time)*sin(i_time*20.) + 
 										 (0.5 + 0.1*sin(i_time*200.)*cos(i_time)));
 	look.y = mod(look.y + vShift, 1.);
 	vec3 video = vec3(texture(sTD2DInputs[0],look));
@@ -45,7 +45,7 @@ vec3 getVideo(vec2 uv)
 vec2 screenDistort(vec2 uv)
 {
 	uv -= vec2(.5,.5);
-	uv = uv*1.2*(1./1.2+2.*uv.x*uv.x*uv.y*uv.y);
+	uv = uv*1.1*(1./1.2+2.*uv.x*uv.x*uv.y*uv.y);
 	uv += vec2(.5,.5);
 	return uv;
 }
@@ -58,10 +58,10 @@ void main()
 	float vigAmt = 3.+.3*sin(i_time + 5.*cos(i_time*5.));
 	float vignette = (1.-vigAmt*(uv.y-.5)*(uv.y-.5))*(1.-vigAmt*(uv.x-.5)*(uv.x-.5));
 	
-	video += stripes(uv);
-	video += noise(uv*2.)/2.;
+	video += stripes(uv)/2;
+	video += noise(uv*2.)/4.;
 	video *= vignette;
-	video *= (12.+mod(uv.y*30.+i_time,1.))/13.;
+	video *= (22.+mod(uv.y*30.+i_time,1.))/23.;
 	
 	fragColor = vec4(video,1.0);
 }

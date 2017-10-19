@@ -10218,11 +10218,11 @@ var _user$project$Main$update = F2(
 						{
 							votedNum: _elm_lang$core$Maybe$Just(_p5)
 						}),
-					_1: A2(
+					_1: _elm_lang$core$Native_Utils.eq(model.votedNum, _elm_lang$core$Maybe$Nothing) ? A2(
 						_elm_lang$websocket$WebSocket$send,
 						_user$project$Main$wsloc(model.location),
 						_user$project$Main$encodeOutMsg(
-							_user$project$Main$Vote(_p5)))
+							_user$project$Main$Vote(_p5))) : _elm_lang$core$Platform_Cmd$none
 				};
 			case 'Connect':
 				return {

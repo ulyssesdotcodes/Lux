@@ -31,9 +31,10 @@ import Data.Aeson as A
 import qualified Data.Bool as B
 import Data.IORef
 import Data.List hiding (lookup)
-import Data.Map.Strict as M (Map, toList, fromList, (!), lookup, member, delete, map, keys)
+import Data.Map.Strict as M (Map, toList, fromList, (!), lookup, member, delete, map, keys, insert)
 import Data.Matrix (fromList)
 import Data.Maybe
+import qualified Data.Set as S
 import Data.Text (Text, unpack)
 import GHC.Generics
 import qualified Network.WebSockets as WS
@@ -157,62 +158,62 @@ instance FromJSON Message where
 videoCues :: Map String Message
 videoCues = M.fromList $
       [ ("preshowloop", PreshowLoop)
-      , ("mrdna", ROS2)
       , ("countdown", Countdown)
-      , ("planetracker1", PlaneTracker1)
-      , ("glitch1", Glitch1)
+      -- , ("planetracker1", PlaneTracker1)
+      -- , ("glitch1", Glitch1)
       , ("filmbreak", FilmBreak)
-      , ("hackingscene1", HackingScene1)
-      , ("hackingscene2", HackingScene2)
-      , ("planetracker2", PlaneTracker2)
-      , ("memoriam", Memoriam)
-      , ("glitch2", Glitch2)
+      -- , ("hackingscene1", HackingScene1)
+      -- , ("hackingscene2", HackingScene2)
+      -- , ("planetracker2", PlaneTracker2)
+      -- , ("memoriam", Memoriam)
+      -- , ("glitch2", Glitch2)
       , ("filmbreak2", FilmBreak2)
       , ("operaloading", OperaLoading)
-      , ("opera", Opera)
+      -- , ("opera", Opera)
       , ("endingb", EndingB)
       , ("endingc", EndingC)
-      , ("haunted", HauntedHouseEnd)
-      , ("end", EndCredits)
-      , ("qa", QA)
-      , ("driving.mov", SV2Driving)
-      , ("show5one.mov", SV5One)
-      , ("show5two.mov", SV5Two)
-      , ("show5three.mov", SV5Three)
-      , ("language.mov", SV6Language)
-      , ("fleshchassis.mov", SV6FleshChassis)
-      , ("SV2Championship", SV2Championship)
-      , ("hauntedhou", HauntedHouse1)
-      , ("paperplane1", PaperPlane1)
-      , ("paperplane2", PaperPlane2)
-      , ("paperplane3", PaperPlane3)
-      , ("paperplane4", PaperPlane4)
-      , ("paperplane5", PaperPlane5)
-      , ("toddcats", ToddCats)
-      , ("toddnuts", ToddNuts)
+      -- , ("haunted", HauntedHouseEnd)
+      , ("end credits", EndCredits)
+      -- , ("qa", QA)
+      -- , ("driving.mov", SV2Driving)
+      -- , ("show5one.mov", SV5One)
+      -- , ("show5two.mov", SV5Two)
+      -- , ("show5three.mov", SV5Three)
+      -- , ("language.mov", SV6Language)
+      -- , ("fleshchassis.mov", SV6FleshChassis)
+      -- , ("SV2Championship", SV2Championship)
+      -- , ("hauntedhou", HauntedHouse1)
+      -- , ("paperplane1", PaperPlane1)
+     -- , ("paperplane2", PaperPlane2)
+      -- , ("paperplane3", PaperPlane3)
+      -- , ("paperplane4", PaperPlane4)
+      -- , ("paperplane5", PaperPlane5)
+      -- , ("toddcats", ToddCats)
+      -- , ("toddnuts", ToddNuts)
       , ("luxdie", LuxDie)
-      , ("todd0", Todd0)
+      -- , ("todd0", Todd0)
       , ("sv3 western", SV3Western)
       , ("sv3 shootout", SV3Shootout)
-      ] ++ ((\i -> ("todd" ++ show i, Todd i)) <$> [1..32])
+      , ("mrdna", ROS2)
+      ] -- ++ ((\i -> ("todd" ++ show i, Todd i)) <$> [1..32])
 
 audioCues :: Map String Message
 audioCues = M.fromList
-      [ ("ROS1", ROS1)
-      , ("ROS2", ROS3)
-      , ("ROS4", ROS4)
-      , ("ROS5", ROS5)
+      -- [ ("ROS1", ROS1)
+      -- , ("ROS2", ROS3)
+      -- , ("ROS4", ROS4)
+      [ ("ROS5", ROS5)
       , ("moustache.mov", SV2Moustache)
-      , ("SV3MTA", SV3MTA)
+      -- , ("SV3MTA", SV3MTA)
       , ("SV3Western", SV3Western)
-      , ("SV3Gunshot", SV3Gunshot)
-      , ("SV3Medieval", SV3Medieval)
-      , ("SV4Laser", SV4Laser)
-      , ("SV4DanceParty", SV4DanceParty)
-      , ("SV4TShirt", SV4TShirt)
-      , ("SV6TimeCapsule", SV6TimeCapsule)
-      , ("Car1", Car1)
-      , ("Car2", Car2)
+      -- , ("SV3Gunshot", SV3Gunshot)
+      -- , ("SV3Medieval", SV3Medieval)
+      -- , ("SV4Laser", SV4Laser)
+      -- , ("SV4DanceParty", SV4DanceParty)
+      -- , ("SV4TShirt", SV4TShirt)
+      -- , ("SV6TimeCapsule", SV6TimeCapsule)
+      -- , ("Car1", Car1)
+      -- , ("Car2", Car2)
       , ("Luxos Reset", LuxosReset)
       , ("Blank", BlankAudio)
       ]
@@ -283,7 +284,7 @@ data FilmVote = FilmVote VoteText FilmData
 
 data FilmData = InCamera Int
               | Effect (Tree TOP -> Tree TOP)
-              | Audio Int
+              | Audio Int Int
               | AltCamera Int
               | Overlay Int
 
@@ -310,7 +311,7 @@ instance Show TDState where
 
 instance Vote FilmVote where
   run (FilmVote _ (InCamera e)) td = td & inCamera +~ e
-  run (FilmVote _ (Audio file)) td = td & soundtrack ?~ (audios ! file)
+  run (FilmVote _ (Audio r file)) td = td & soundtrack ?~ (audios ! file) & filmVotePool %~ if M.member r filmVotes then M.insert r (filmVotes ! r) else id
   run (FilmVote _ (Effect eff)) td = td & effects %~ (eff:)
   run (FilmVote _ (AltCamera id)) td = td & altmovie ?~ (films ! id)
   run (FilmVote _ (Overlay id)) td = td & overlays %~ ((films ! id):)
@@ -343,37 +344,45 @@ activeVoteTexts (ShowVotes vs) = voteText . fst <$> vs
 activeVoteTexts (FilmVotes vs) = voteText . (!) filmVotes . fst <$> filter (flip member filmVotes . fst) vs
 activeVoteTexts NoVotes = []
 
-newServerState :: TOPRunner -> IO ServerState
-newServerState tr = newTDState >>= pure . ServerState [] tr "password"
+newServerState :: Text -> TOPRunner -> IO ServerState
+newServerState pass tr = newTDState >>= pure . ServerState [] tr pass
 
 newTDState :: IO TDState
-newTDState = newStdGen >>= pure . TDState NoVotes filmVotes Nothing Nothing Nothing Nothing blankMovieData blankMovieData (Just blankMovieData) [] Nothing [] Nothing ATOne Nothing Nothing 0 True True False . randoms
+newTDState = newStdGen >>= pure . TDState NoVotes initialVotePool Nothing Nothing Nothing Nothing blankMovieData blankMovieData (Just blankMovieData) [] Nothing [] Nothing ATOne Nothing Nothing 0 True True False . randoms
 
 filmVotes :: Map Int FilmVote
 filmVotes = M.fromList [ (1, FilmVote (VoteText ("Six Foot Orange", "Six Foot Orange")) (InCamera 2))
                       , (2, FilmVote (VoteText ("Director Redux", "Director Redux")) (InCamera 4))
                       , (3, FilmVote (VoteText ("Black & White", "Black & White")) (Effect $ glslTP' id "scripts/bandw.glsl" [] . (:[])))
                       , (4, FilmVote (VoteText ("VHS", "VHS")) (Effect $ glslTP' id "scripts/vhs.glsl" [("i_time", emptyV4 & _1 ?~ seconds)] . (:[])))
-                      , (5, FilmVote (VoteText ("Annoyance", "Annoyance")) (Audio 0))
+                      -- , (5, FilmVote (VoteText ("Annoyance", "Annoyance")) (Audio 0))
                       , (6, FilmVote (VoteText ("Square", "Square")) (Effect $ glslTP' id "scripts/crop.glsl" [("uAspectRatio", emptyV4 & _1 ?~ float 1)] . (:[])))
                       , (7, FilmVote (VoteText ("Cinescope", "Cinescope")) (Effect $ glslTP' id "scripts/crop.glsl" [("uAspectRatio", emptyV4 & _1 ?~ float 2.35)] . (:[])))
                       , (8, FilmVote (VoteText ("Imax", "Imax")) (Effect $ glslTP' id "scripts/crop.glsl" [("uAspectRatio", emptyV4 & _1 ?~ float 1.43)] . (:[])))
                       , (9, FilmVote (VoteText ("Artistic Significance", "Artistic Significance")) (InCamera 8))
-                      , (10, FilmVote (VoteText ("Webcam", "Webcam")) (Effect $ compT 0 . (vidIn:) . (:[])))
+                      -- , (10, FilmVote (VoteText ("Webcam", "Webcam")) (Effect $ compT 0 . (vidIn:) . (:[])))
                       , (11, FilmVote (VoteText ("Roller skates", "Roller skates")) (InCamera 1))
                       , (12, FilmVote (VoteText ("Space Opera", "Space Opera")) (InCamera 16))
                       -- , (13, FilmVote (VoteText ("3rd Grader", "3rd Grader")) (AltCamera 5))
                       , (14, FilmVote (VoteText ("Fish Cam", "Fish Cam")) (Overlay 6))
                       -- , (15, FilmVote (VoteText ("Chicken cam", "CC")) (AltCamera 7))
-                      , (16, FilmVote (VoteText ("Bottle Vision", "Bottle Vision")) (AltCamera 8))
-                      , (17, FilmVote (VoteText ("Subtitles 1", "Subtitles 1")) (Overlay 9))
-                      , (18, FilmVote (VoteText ("Subtitles 2", "Subtitles 2")) (Overlay 10))
-                      , (19, FilmVote (VoteText ("Soundtrack 1", "Soundtrack 1")) (Audio 1))
-                      , (20, FilmVote (VoteText ("Soundtrack 2", "Soundtrack 2")) (Audio 2))
-                      , (21, FilmVote (VoteText ("Soundtrack 3", "Soundtrack 3")) (Audio 3))
-                      , (22, FilmVote (VoteText ("Pelicans", "Pelicans")) (Overlay 10))
+                      -- , (16, FilmVote (VoteText ("Bottle Vision", "Bottle Vision")) (AltCamera 8))
+                      , (17, FilmVote (VoteText ("English Subtitles", "English Subtitles")) (Overlay 9))
+                      , (18, FilmVote (VoteText ("Russian Subtitles", "Russian Subtitles")) (Overlay 10))
+                      , (19, FilmVote (VoteText ("Soundtrack: Smooth Jazz", "Soundtrack: Smooth Jazz")) (Audio 25 1))
+                      , (20, FilmVote (VoteText ("Soundtrack: Ragtime", "Soundtrack: Ragtime")) (Audio 26 2))
+                      , (21, FilmVote (VoteText ("Soundtrack: Audrey Theme", "Soundtrack: Audrey Theme")) (Audio 27 3))
+                      , (22, FilmVote (VoteText ("Pelicans", "Pelicans")) (Overlay 49))
                       , (23, FilmVote (VoteText ("Mocap Man", "Mocap Man")) (Overlay 12))
+                      , (24, FilmVote (VoteText ("Colorama", "Colorama")) (Effect $ hsvT' (hsvAdjSatMult ?~ float 2)))
+                      , (25, FilmVote (VoteText ("Soundtrack: Smooth Jazz Remix", "Soundtrack: Smooth Jazz Remix")) (Audio (-1) 39))
+                      , (26, FilmVote (VoteText ("Soundtrack: Ragtime Remix", "Soundtrack: Ragtime Remix")) (Audio (-1) 40))
+                      , (27, FilmVote (VoteText ("Soundtrack: Audrey Theme Remix", "Soundtrack: Audrey Theme Remix")) (Audio (-1) 41))
+                      , (28, FilmVote (VoteText ("Chinese Subtitles", "Chinese Subtitles")) (Overlay 11))
                       ]
+
+initialVotePool :: Map Int FilmVote
+initialVotePool = foldr M.delete filmVotes [25, 26, 27]
 
 blankMovieData = MovieData (100) (const "Holme/blank.jpg") 0 False False 0
 
@@ -385,18 +394,18 @@ films = M.fromList $ [ (0, MovieData 0 (printf "Holme/0%05b.mov" . _inCamera) 13
                    , (6, MovieData 6 (const "Holme/fish_cam.mov") 1357 True False 0)
                    , (7, MovieData 7 (const "Holme/chicken_cam.mov") 1357 False False 0)
                    , (8, MovieData 8 (const "Holme/bottle_vision.mov") 1357 False False 0)
-                   , (9, MovieData 9 (const "Holme/sub1.mov") 1357 False False 0)
-                   , (10, MovieData 10 (const "Holme/sub2.mov") 1357 False False 0)
-                   , (11, MovieData 11 (const "Holme/sub_3.mov") 1357 False False 0)
+                   , (9, MovieData 9 (\td -> if td ^. movie . movieId == 2 then "Holme/sub1_2.mov" else "Holme/sub1_1.mov") 1357 False False 0)
+                   , (10, MovieData 10 (\td -> if td ^. movie . movieId == 2 then "Holme/sub2_2.mov" else "Holme/sub2_1.mov") 1357 False False 0)
+                   , (11, MovieData 11 (\td -> if td ^. movie . movieId == 2 then "Holme/sub3_2.mov" else "Holme/sub3_1.mov") 1357 False False 0)
                    , (12, MovieData 12 (const "Holme/mocap_man.mov") 1357 False False 0)
                    , (13, MovieData 13 (const "Holme/subliminals.mov") 1357 False False 0)
-                   , (14, MovieData 14 (const "Holme/preshowloop.mov") 900 True False 0)
+                   , (14, MovieData 14 (const "Holme/preshowloop.mov") 970 True False 0)
                    , (15, MovieData 15 (const "Holme/mrdna.mov") 900 False False 0)
                    , (16, MovieData 16 (const "Holme/calibration.mov") 180 False False 0)
                    , (17, MovieData 17 (const "Holme/countdown.mov") 30 False False 0)
                    , (18, MovieData 18 (const "Holme/tracker1.mov") 240 False False 0)
                    , (19, MovieData 19 (const "Holme/glitch1.mov") 240 False False 0)
-                   , (20, MovieData 20 (const "Holme/filmbreak.mov") 60 False False 0)
+                   , (20, MovieData 20 (const "Holme/filmbreak.mov") 300 False False 0)
                    , (21, MovieData 21 (const "Holme/hack1.mov") 120 False False 0)
                    , (22, MovieData 22 (const "Holme/hack2.mov") 240 False False 0)
                    , (23, MovieData 23 (const "Holme/tracker2.mov") 720 False False 0)
@@ -458,6 +467,9 @@ audios = M.fromList [ (0, "Holme/TAKEONMEUCC.mp3")
                     , (36, "Holme/fleshchassis.mp3")
                     , (37, "Holme/gunshot.mp3")
                     , (38, "")
+                    , (39, "Holme/soundtrack_1_remix.mp3")
+                    , (40, "Holme/soundtrack_2_remix.mp3")
+                    , (41, "Holme/soundtrack_3_remix.mp3")
                     ]
 
 
@@ -490,7 +502,9 @@ go = do
   state <- newIORef mempty
   let
     runner = \(t, c) -> run2 state [t] [c]
-  newState <- newServerState runner
+  -- putStrLn "Enter password: "
+  -- pass <- T.pack <$> getLine
+  newState <- newServerState "password" runner
   state <- newMVar newState
   runner $ renderTDState $ newState ^. tdState
   serve state
@@ -512,22 +526,22 @@ renderTDState td@(TDState {_activeVotes, _lastVoteWinner, _voteTimer, _movie, _e
     [maybe (
     compT 31 $ zipWith renderVote [0..] votes
     ++ (if length votes == 0 && isNothing _lastVoteWinner then [mv False blankMovieData] else [])
-    ++ maybeToList (translate (0, 0.375) . borderText (grey 1) 0.95 <$> msum [(++) "Your vote is: " . unpack . snd . voteNames <$> _lastVoteWinner, unpack <$> _voteQuestion])
+    ++ maybeToList (translate (0, 0.375) . borderText (grey 0) 0.95 <$> unpack <$> _voteQuestion)
+    ++ maybeToList (borderText (grey 1) 0.95 . (++) "Your vote is: " . unpack . snd . voteNames <$> _lastVoteWinner)
     ++ maybeToList
       (fmap (translate (0, (-0.45)) . resTexts (grey 1) . caststr . LD.floor)
           $ (!*) . msToF
           <*> ((!+) (float 1) . (!*) (float (-1))) . chopChanName "timer_fraction" . (timerS' ((timerStart .~ _resetVoteTimer))) . msToF
           <$> _voteTimer)) (mv _resetMovie) _overlayVoteScreen
-    , compT 31 $
+    , ( compT 31 $
+        (mv' _resetMovie _movie <$> if _movie ^. movieEffects then maybe (_overlays ++ [_movie]) (:[]) _altmovie else [_movie]) ) & (foldl (.) id (if _movie ^. movieEffects then _effects else []))
     -- ++
-      (mv _resetMovie <$> (if _movie ^. movieEffects then _overlays else []))
-        ++ [ (mv _resetMovie $ if _movie ^. movieEffects then fromMaybe _movie _altmovie else _movie) & (foldl (.) id (if _movie ^. movieEffects then _effects else [])) ]
     ]
   , audioDevOut' (audioDevOutVolume ?~ float 1) $
     math' opsadd $
                   ([audioMovie $ mv _resetMovie _movie]) ++
                   (maybeToList $ audnorep . str . BS.unpack <$> _voteAudio) ++
-                  (maybeToList $ audioFileIn . str. BS.unpack <$> _soundtrack) ++
+                  (if isMainReel _movie then maybeToList $ audioFileIn . str. BS.unpack <$> _soundtrack else [])++
                   (fmap (audnorep . str. BS.unpack) $ catMaybes [_cueAudioOne, _cueAudioTwo]) -- use movie for audio timing
   )
   where
@@ -540,7 +554,8 @@ renderTDState td@(TDState {_activeVotes, _lastVoteWinner, _voteTimer, _movie, _e
                , rectangle' ((rectangleBorderColor .~ fromColor (rev c)) . (rectangleColor .~ fromColor c) . (rectangleBorderWidth ?~ float 0.01) . (topResolution .~ iv2 (1920, 1080))) (Just $ float w, Just $ float 0.075)
                ]
     msToF = float . (flip (/) 1000.0) . fromIntegral
-    mv rmov mf = movieFileIn' ((moviePlayMode ?~ int 0) . ((?~) movieIndex $ casti . mvtimer rmov $ mf)) . str $ (mf ^. movieFile) td
+    mv rmov mf = mv' rmov mf mf
+    mv' rmov mft mf = movieFileIn' ((moviePlayMode ?~ int 0) . ((?~) movieIndex $ casti . mvtimer rmov $ mft)) . str $ (mf ^. movieFile) td
     mvtimer rmov (MovieData{_movieTimeOffset, _movieFile, _movieCycle, _movieLength, _movieId}) = (float $ 60 * _movieTimeOffset) !+ (chopChan0 $ fix (BS.pack $ "custardtimer_" ++ show _movieId ++ "_cust") $ timerS' ((timerCount ?~ int 2) . (timerShowFraction ?~ bool False) . (timerStart .~ rmov) . (timerCycle ?~ bool (_movieCycle)) . (timerCycleLimit ?~ bool (_movieCycle)) . (timerCue .~ rmov)) (float $ _movieLength - _movieTimeOffset))
     isMainReel mov = mov ^. movieEffects
     sidebyside = glslTP' (topResolution .~ (Just . casti $ bstr "sum(map(lambda x: x.width, me.inputs))", Just . casti $ bstr "max(map(lambda x: x.height, me.inputs))")) "scripts/sidebyside.glsl" []
@@ -709,7 +724,7 @@ colFromIdx _ = grey 1
 
 
 nextFilmVote :: Text -> [ Int ] -> Bool -> TDState -> TDState
-nextFilmVote q vs b td =
+nextFilmVote _ vs b td =
   let
     (newVotes, newrs) =
       case rvotes rlist' (filter (flip member fvp) vs) of
@@ -720,7 +735,7 @@ nextFilmVote q vs b td =
     rvotes rs vs = (drop (length vs) rlist',) . take 3 . nub . catMaybes . snd $ mapAccumL (flip popAt) vs (zipWith rids (backsaw $ length vs) rs)
     rids l r = Prelude.floor $ r * (fromIntegral l + 1)
   in
-    td & (activeVotes .~ newVotes) . (rlist .~ newrs) . (overlayVoteScreen .~ Nothing) . (voteQuestion ?~ q) . (lastVoteWinner .~ Nothing)
+    td & (activeVotes .~ newVotes) . (rlist .~ newrs) . (overlayVoteScreen .~ Nothing) . (voteQuestion .~ Nothing) . (lastVoteWinner .~ Nothing)
 
 changeReel :: Int -> TDState -> TDState
 changeReel id = movie .~ films ! id
@@ -773,6 +788,7 @@ endVote td@(TDState { _activeVotes = FilmVotes vs }) =
   in
     td &
       (activeVotes .~ NoVotes) .
+      (voteTimer .~ Nothing) .
       (lastVoteWinner ?~ (voteText maxVote'')) .
       (Lux.run maxVote'') .
       (filmVotePool %~ M.delete maxVote')

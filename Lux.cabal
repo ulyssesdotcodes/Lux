@@ -19,7 +19,7 @@ library
                        , aeson
                        , async
                        , bytestring >= 0.10
-                       , containers >= 0.5
+                       , containers >= 0.5.7.1
                        , LambdaDesigner
                        , lens >= 4.15
                        , matrix >= 0.3

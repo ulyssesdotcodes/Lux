@@ -87,7 +87,7 @@ update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
     ChooseVote i ->
-      ({ model | votedNum = Just i }, WebSocket.send (wsloc model.location) <| encodeOutMsg (Vote i))
+      ({ model | votedNum = Just i }, if model.votedNum == Nothing then WebSocket.send (wsloc model.location) <| encodeOutMsg (Vote i) else Cmd.none)
 
     Connect pass ->
       (model, WebSocket.send (wsloc model.location) <| encodeOutMsg (Connecting pass))
