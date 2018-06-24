@@ -188,14 +188,14 @@ videoCues = M.fromList $
       -- , ("paperplane3", PaperPlane3)
       -- , ("paperplane4", PaperPlane4)
       -- , ("paperplane5", PaperPlane5)
-      -- , ("toddcats", ToddCats)
-      -- , ("toddnuts", ToddNuts)
+      , ("toddcats", ToddCats)
+      , ("toddnuts", ToddNuts)
       , ("luxdie", LuxDie)
-      -- , ("todd0", Todd0)
+      , ("todd0", Todd0)
       , ("sv3 western", SV3Western)
       , ("sv3 shootout", SV3Shootout)
       , ("mrdna", ROS2)
-      ] -- ++ ((\i -> ("todd" ++ show i, Todd i)) <$> [1..32])
+      ] ++ ((\i -> ("todd" ++ show i, Todd i)) <$> [1..32])
 
 audioCues :: Map String Message
 audioCues = M.fromList
@@ -358,7 +358,7 @@ filmVotes = M.fromList [ (1, FilmVote (VoteText ("Six Foot Orange", "Six Foot Or
                       -- , (5, FilmVote (VoteText ("Annoyance", "Annoyance")) (Audio 0))
                       , (6, FilmVote (VoteText ("Square", "Square")) (Effect $ glslTP' id "scripts/crop.glsl" [("uAspectRatio", emptyV4 & _1 ?~ float 1)] . (:[])))
                       , (7, FilmVote (VoteText ("Cinescope", "Cinescope")) (Effect $ glslTP' id "scripts/crop.glsl" [("uAspectRatio", emptyV4 & _1 ?~ float 2.35)] . (:[])))
-                      , (8, FilmVote (VoteText ("Imax", "Imax")) (Effect $ glslTP' id "scripts/crop.glsl" [("uAspectRatio", emptyV4 & _1 ?~ float 1.43)] . (:[])))
+                      , (8, FilmVote (VoteText ("IMAX Aspect", "IMAX Aspect")) (Effect $ glslTP' id "scripts/crop.glsl" [("uAspectRatio", emptyV4 & _1 ?~ float 1.43)] . (:[])))
                       , (9, FilmVote (VoteText ("Artistic Significance", "Artistic Significance")) (InCamera 8))
                       -- , (10, FilmVote (VoteText ("Webcam", "Webcam")) (Effect $ compT 0 . (vidIn:) . (:[])))
                       , (11, FilmVote (VoteText ("Roller skates", "Roller skates")) (InCamera 1))
@@ -374,11 +374,12 @@ filmVotes = M.fromList [ (1, FilmVote (VoteText ("Six Foot Orange", "Six Foot Or
                       , (21, FilmVote (VoteText ("Soundtrack: Audrey Theme", "Soundtrack: Audrey Theme")) (Audio 27 3))
                       , (22, FilmVote (VoteText ("Pelicans", "Pelicans")) (Overlay 49))
                       , (23, FilmVote (VoteText ("Mocap Man", "Mocap Man")) (Overlay 12))
-                      , (24, FilmVote (VoteText ("Colorama", "Colorama")) (Effect $ hsvT' (hsvAdjSatMult ?~ float 2)))
+                      , (24, FilmVote (VoteText ("Colorama", "Colorama")) (Effect $ hsvT' ((hsvAdjSatMult ?~ float 2) . (hsvAdjValMult ?~ float 2))))
                       , (25, FilmVote (VoteText ("Soundtrack: Smooth Jazz Remix", "Soundtrack: Smooth Jazz Remix")) (Audio (-1) 39))
                       , (26, FilmVote (VoteText ("Soundtrack: Ragtime Remix", "Soundtrack: Ragtime Remix")) (Audio (-1) 40))
                       , (27, FilmVote (VoteText ("Soundtrack: Audrey Theme Remix", "Soundtrack: Audrey Theme Remix")) (Audio (-1) 41))
                       , (28, FilmVote (VoteText ("Chinese Subtitles", "Chinese Subtitles")) (Overlay 11))
+                      , (29, FilmVote (VoteText ("Director Commentary", "Director Commentary")) (Effect id))
                       ]
 
 initialVotePool :: Map Int FilmVote
@@ -476,7 +477,7 @@ audios = M.fromList [ (0, "Holme/TAKEONMEUCC.mp3")
 showVotes :: Map Int ShowVote
 showVotes = M.fromList [ (0, ShowVote (VoteText ("Running (for your life or for exercise)", "A HAUNTED HOUSE")) 0)
                        , (1, ShowVote (VoteText ("Making things into other things", "PAPER PLANE FUN BREAKS")) 0)
-                       , (2, ShowVote (VoteText ("Strength", "ARM WRESTING TOURNAMENT")) 0)
+                       , (2, ShowVote (VoteText ("Strength", "ARM WRESTLING TOURNAMENT")) 0)
                        , (3, ShowVote (VoteText ("Dexterity", "DRIVING GAME")) 0)
                        , (4, ShowVote (VoteText ("Facial Hair", "MOUSTACHE GAME")) 0)
                        , (5, ShowVote (VoteText ("Chivalry", "THE UVX MEDIEVAL EXPERIENCE")) 0)
@@ -791,7 +792,8 @@ endVote td@(TDState { _activeVotes = FilmVotes vs }) =
       (voteTimer .~ Nothing) .
       (lastVoteWinner ?~ (voteText maxVote'')) .
       (Lux.run maxVote'') .
-      (filmVotePool %~ M.delete maxVote')
+      (filmVotePool %~ M.delete maxVote') .
+      (voteAudio .~ Nothing)
 endVote td@(TDState { _activeVotes = NoVotes }) = td
 
 forceFilmVote :: Int -> TDState -> TDState
