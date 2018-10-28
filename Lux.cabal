@@ -15,18 +15,23 @@ cabal-version:       >=1.10
 library
     hs-source-dirs:      src
     exposed-modules:     Lux
+                       , OSCServer
     build-depends:       base >= 4.7 && < 5
                        , aeson
                        , async
                        , bytestring >= 0.10
+                       , bytestring-trie
                        , containers >= 0.5.7.1
+                       , hosc
                        , LambdaDesigner
                        , lens >= 4.15
                        , matrix >= 0.3
                        , mtl
                        , random
+                       , split
                        , stm
                        , text
+                       , transformers
                        , websockets
 
                         

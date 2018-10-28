@@ -1,93 +1,8 @@
 from dictdiffer import diff, dot_lookup
+from collections import deque
 
-classes = {
-  'blur' : (blurTOP, 'blur', 'TOP'),
-  'chopToTop' : (choptoTOP, 'chopto', 'TOP'),
-  'circleTop' : (circleTOP, 'circle', 'TOP'),
-  'compositeTop' : (compositeTOP, 'comp', 'TOP'),
-  'crop' : (cropTOP, 'crop', 'TOP'),
-  'displace' : (displaceTOP, 'displace', 'TOP'),
-  'edges' : (edgeTOP, 'edge', 'TOP'),
-  'feedbackTop' : (feedbackTOP, 'feedback', 'TOP'),
-  'flip' : (flipTOP, 'flip', 'TOP'),
-  'glslTop' : (glslmultiTOP, 'glslMulti', 'TOP'),
-  'movieFileIn' : (moviefileinTOP, 'moviefilein', 'TOP'),
-  'inTop' : (inTOP, 'in', 'TOP'),
-  'nullTop' : (nullTOP, 'null', 'TOP'),
-  'outTop' : (outTOP, 'out', 'TOP'),
-  'render' : (renderTOP, 'render', 'TOP'),
-  'rectangleTop' : (rectangleTOP, 'rectangle', 'TOP'),
-  'hsvAdjustTop' : (hsvadjustTOP, 'hsvadj', 'TOP'),
-  'levelTop' : (levelTOP, 'level', 'TOP'),
-  'transform' : (transformTOP, 'transform', 'TOP'),
-  'noiseTop' : (noiseTOP, 'noise', 'TOP'),
-  'ramp' : (rampTOP, 'ramp', 'TOP'),
-  'switchTop' : (switchTOP, 'switch', 'TOP'),
-  'selectTop' : (selectTOP, 'select', 'TOP'),
-  'textTop' : (textTOP, 'text', 'TOP'),
-  'videoDeviceIn' : (videodeviceinTOP, 'videodevin', 'TOP'),
+from classes import classes
 
-  'analyze' : (analyzeCHOP, 'analyze', 'CHOP'),
-  'audioDevOut' : (audiodeviceoutCHOP, 'audiodevout', 'CHOP'),
-  'audioFileIn' : (audiofileinCHOP, 'audiofilein', 'CHOP'),
-  'audioFilter' : (audiofilterCHOP, 'audiofilter', 'CHOP'),
-  'audioIn' : (audiodeviceinCHOP, 'audiodevin', 'CHOP'),
-  'audioMovie' : (audiomovieCHOP, 'audiomovie', 'CHOP'),
-  'audioSpectrum' : (audiospectrumCHOP, 'audiospect', 'CHOP'),
-  'constantChop' : (constantCHOP, 'constant', 'CHOP'),
-  'count' : (countCHOP, 'count', 'CHOP'),
-  'delay' : (delayCHOP, 'delay', 'CHOP'),
-  'fan' : (fanCHOP, 'fan', 'CHOP'),
-  'feedbackChop' : (feedbackCHOP, 'feedback', 'CHOP'),
-  'hold' : (holdCHOP, 'hold', 'CHOP'),
-  'lag' : (lagCHOP, 'lag', 'CHOP'),
-  'logic' : (logicCHOP, 'logic', 'CHOP'),
-  'inChop' : (inCHOP, 'in', 'CHOP'),
-  'math' : (mathCHOP, 'math', 'CHOP'),
-  'mergeChop' : (mergeCHOP, 'merge', 'CHOP'),
-  'midiIn' : (midiinmapCHOP, 'midiinmap', 'CHOP'),
-  'nullChop' : (nullCHOP, 'null', 'CHOP'),
-  'noiseChop' : (noiseCHOP, 'noise', 'CHOP'),
-  'oscInChop' : (oscinCHOP, 'oscin', 'CHOP'),
-  'outChop' : (outCHOP, 'out', 'CHOP'),
-  'sopToChop' : (soptoCHOP, 'sopto', 'CHOP'),
-  'selectChop' : (selectCHOP, 'select', 'CHOP'),
-  'switchChop' : (switchCHOP, 'switch', 'CHOP'),
-  'timer' : (timerCHOP, 'timer', 'CHOP'),
-
-  'chopToSop' : (choptoSOP, 'chopto', 'SOP'),
-  'circleSop' : (circleSOP, 'circle', 'SOP'),
-  'lineSop' : (lineSOP, 'line', 'SOP'),
-  'mergeSop' : (mergeSOP, 'merge', 'SOP'),
-  'metaball' : (metaballSOP, 'metaball', 'SOP'),
-  'noiseSop' : (noiseSOP, 'noise', 'SOP'),
-  'inSop' : (inSOP, 'in', 'SOP'),
-  'outSop' : (outSOP, 'out', 'SOP'),
-  'sphere' : (sphereSOP, 'sphere', 'SOP'),
-  'sweep' : (sweepSOP, 'sweep', 'SOP'),
-  'transformSop' : (transformSOP, 'transform', 'SOP'),
-
-  'inMat' : (inMAT, 'in', 'MAT'),
-  'outMat' : (outMAT, 'out', 'MAT'),
-  'constMat' : (constantMAT, 'constant', 'MAT'),
-
-  'chopExec' : (chopexecuteDAT, 'chopexecute', 'DAT'),
-  'datExec' : (datexecuteDAT, 'datexecute', 'DAT'),
-  'inDat' : (inDAT, 'in', 'DAT'),
-  'outDat' : (outDAT, 'out', 'DAT'),
-  'scriptDat' : (scriptDAT, 'script', 'DAT'),
-  'selectDat' : (selectDAT, 'select', 'DAT'),
-  'table' : (tableDAT, 'table', 'DAT'),
-  'textDat' : (textDAT, 'text', 'DAT'),
-  'tcpip' : (tcpipDAT, 'tcpip', 'DAT'),
-
-  'camera' : (cameraCOMP, 'cam', 'COMP'),
-  'geo' : (geometryCOMP, 'geo', 'COMP'),
-  'light' : (lightCOMP, 'light', 'COMP'),
-  'base' : (baseCOMP, 'base', 'COMP')
-}
-
-commandOrderRev = ["start", "cuepulse", "initialize"]
 
 def getClass(opname, default):
   return classes.get(opname, default)
@@ -97,7 +12,6 @@ diffs = []
 
 def apply(newState):
   global state
-  print(newState)
   # Step 1: create new nodes
   prevState = state
   state = newState
@@ -106,7 +20,6 @@ def apply(newState):
 
   for diffi in list(reversed(list(ddiff))):
     splits = diffi[1].split('.') if isinstance(diffi[1], str) else diffi[1]
-    print(str(splits))
     if diffi[1] == '':
       if diffi[0] == 'add':
         addAll(diffi[2])
@@ -120,8 +33,9 @@ def apply(newState):
       diffip = diffi[1] if isinstance(diffi[1], str) or diffi[1] == '' else ".".join(concatname)
       item = dot_lookup(state, diffip, parent=True)
       curop = op(getName(splits[0]))
-      for connector in curop.inputConnectors:
-        connector.disconnect()
+      if hasattr(curop, 'inputConnectors'):
+        for connector in curop.inputConnectors:
+          connector.disconnect()
       for i, conn in enumerate(item['connections']):
         op(getName(conn)).outputConnectors[0].connect(curop.inputConnectors[i])
     elif splits[1] == 'parameters':
@@ -133,18 +47,27 @@ def apply(newState):
         addParameter(curop, splits[2], diffi[2][1])
       elif diffi[0] == 'remove':
         for param in diffi[2]:
+          print("remove")
+          print(param[0])
+          if(param[0] == 'tx'):
+            curop.par.tx = 0
+          elif param[0] == 'ty':
+            curop.par.ty = 0
+          elif param[0] == 'rotate':
+            curop.par.rotate = 0
+          elif str.startswith(param[0], "name"):
+            curop.pars(param[0])[0].val = ""
           par = curop.pars(param[0])[0]
+          print("val: " + str(par.val))
           if par.val:
+            print("def: " + str(par.default))
             par.val = par.default
 
     elif splits[1] == 'text':
       op(getName(splits[0])).text = diffi[2][1]
 
-  for key, val in state.items():
-    if 'commands' in val:
-      commands = sorted(val['commands'], key=lambda x: commandOrderRev.index(x['args'][0]) if x['command']=='pulse' and x['args'][0] in commandOrderRev else -1, reverse=True)
-      for command in commands:
-        runCommand(op(getName(key)), command['command'], command['args'])
+    elif splits[1] == 'commands' and diffi[0] == 'add':
+      runCommand(getName(splits[0]), diffi[2][0][1]['command'], diffi[2][0][1]['args'])
 
 
 def getName(name):
@@ -152,9 +75,10 @@ def getName(name):
 
 def addAll(state):
   connections = []
-  queue = state
+  queue = deque(state)
+  i = 0
   while len(queue) > 0:
-    (key, value) = queue.pop()
+    (key, value) = queue.popleft()
     addr = getName(key)
     par = addr[:(addr.rfind('/'))]
     if op(par) != None:
@@ -169,11 +93,16 @@ def addAll(state):
       for connector in op(conn[1]).inputConnectors:
         connector.disconnect()
     op(getName(conn[0])).outputConnectors[0].connect(op(conn[1]).inputConnectors[conn[2]])
+    if op(conn[1]).type == 'feedback' and op(conn[1]).isCHOP:
+      print("feedback chop11")
+      op(conn[1]).par.reset.pulse(1, frames=2)
+
 
 def addChange(key, value):
   addr = getName(key)
 
   newOp = createOp(addr, value['ty'])
+  print("Adding op " + value['ty'])
 
   if 'parameters' in value:
     pars = value['parameters'].items()
@@ -185,11 +114,17 @@ def addChange(key, value):
     for k,v in pars:
       addParameter(newOp, k, v)
 
+  if 'commands' in value:
+    coms = value['commands']
+    for comm in coms:
+      runCommand(addr, comm['command'], comm['args'])
+
   if 'text' in value and value['text'] != None:
     newOp.text = value['text']
 
   if 'connections' in value:
     return ((c, addr, i) for i,c in enumerate(value['connections']))
+
 
 def createOp(addr, ty):
   clazz = getClass(ty, 'none')
@@ -204,7 +139,7 @@ def createOp(addr, ty):
     op(addr).destroy()
 
   # Special case things that can't have duplicates
-  if clazz[1] == 'audiodevin' or clazz[1] == 'videodevin':
+  if clazz[1] == 'audiodevicein' or clazz[1] == 'videodevicein' or clazz[1] == 'ndiin' or clazz[1] == 'leapmotion' or clazz[1] == 'cplusplus':
     if op(clazz[1]) == None:
       parent().create(clazz[0], clazz[1])
     if clazz[2] == "CHOP":
@@ -233,6 +168,9 @@ def createOp(addr, ty):
 
 def addParameter(newOp, name, value):
   pars = newOp.pars(name)
+  if len(pars) == 0:
+    return
+
   par = pars[0]
   if isfloat(value):
     if par.isMenu:
@@ -245,20 +183,20 @@ def addParameter(newOp, name, value):
   # Special case loading tox as soon as we know source
   if name == "externaltox":
     newOp.par.reinitnet.pulse()
-  elif name == 'file' and newOp.type == "text":
+  elif name == 'file' and (newOp.type == "text" or newOp.type == "table"):
     newOp.par.loadonstartpulse.pulse()
 
-def runCommand(newOp, command, args):
-  print(str(args))
-  if command == "pulse":
-    pars = newOp.pars(args[0])
-    if len(pars) > 0:
-      if isfloat(args[1]):
-        pars[0].pulse(float(args[1]), frames=int(args[2]))
-      else:
-        pars[0].pulse(args[1], frames=int(args[2]))
-  elif command == "store":
-    newOp.store(args[0], args[1])
+def runCommand(newOpName, command, args):
+    if command == "pulse":
+      newOp = op(newOpName)
+      pars = newOp.pars(args[0])
+      if len(pars) > 0:
+        if isfloat(args[1]):
+          pars[0].pulse(float(args[1]), frames=float(args[2]))
+        else:
+          pars[0].pulse(args[1])
+    elif command == "store":
+      newOp.store(args[0], args[1])
 
 def isfloat(value):
   try:

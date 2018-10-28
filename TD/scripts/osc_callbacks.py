@@ -20,7 +20,8 @@
 import scripts
 import json
 
-def receiveOSC(dat, rowIndex, message, bytes, timeStamp, address, args, peer):
+def onReceiveOSC(dat, rowIndex, message, bytes, timeStamp, address, args, peer):
+
   if address == "/json":
     scripts.apply(json.loads(args[0]))
     return

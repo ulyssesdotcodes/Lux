@@ -3,8 +3,13 @@
 <script src="index.js"></script>
 <link rel="stylesheet"  href="styles.css" />
 <script>
+    var storedState = localStorage.getItem('elm-main-save');
+    var startingState = storedState ? JSON.parse(storedState) : null;
     var node = document.getElementById('main');
-    var app = Elm.Main.embed(node);
+    var app = Elm.Main.embed(node, JSON.parse(storedState));
+    app.ports.setStorage.subscribe(function(state) {
+        localStorage.setItem('elm-main-save', JSON.stringify(state));
+    });
     // Note: if your Elm module is named "MyThing.Root" you
     // would call "Elm.MyThing.Root.embed(node)" instead.
 </script>
