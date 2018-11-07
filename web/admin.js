@@ -10170,7 +10170,7 @@ var _user$project$Main$encodeOutMsg = function (msg) {
 							},
 							_1: {ctor: '[]'}
 						});
-				default:
+				case 'StartRun':
 					return _elm_lang$core$Json_Encode$object(
 						{
 							ctor: '::',
@@ -10178,6 +10178,28 @@ var _user$project$Main$encodeOutMsg = function (msg) {
 								ctor: '_Tuple2',
 								_0: 'type',
 								_1: _elm_lang$core$Json_Encode$string('start')
+							},
+							_1: {ctor: '[]'}
+						});
+				case 'Ending':
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('ending')
+							},
+							_1: {ctor: '[]'}
+						});
+				default:
+					return _elm_lang$core$Json_Encode$object(
+						{
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'type',
+								_1: _elm_lang$core$Json_Encode$string('reset')
 							},
 							_1: {ctor: '[]'}
 						});
@@ -10200,6 +10222,8 @@ var _user$project$Main$Model = F6(
 	function (a, b, c, d, e, f) {
 		return {messages: a, votes: b, location: c, filmVotes: d, vcues: e, acues: f};
 	});
+var _user$project$Main$Reset = {ctor: 'Reset'};
+var _user$project$Main$Ending = {ctor: 'Ending'};
 var _user$project$Main$StartRun = {ctor: 'StartRun'};
 var _user$project$Main$DoFilmVote = {ctor: 'DoFilmVote'};
 var _user$project$Main$Connecting = {ctor: 'Connecting'};
@@ -10380,7 +10404,41 @@ var _user$project$Main$view = function (model) {
 										_0: _elm_lang$html$Html$text('Force Vote'),
 										_1: {ctor: '[]'}
 									}),
-								_1: {ctor: '[]'}
+								_1: {
+									ctor: '::',
+									_0: A2(
+										_user$project$Main$button,
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html_Events$onClick(
+												_user$project$Main$Send(
+													_user$project$Main$encodeOutMsg(_user$project$Main$Ending))),
+											_1: {ctor: '[]'}
+										},
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html$text('Ending'),
+											_1: {ctor: '[]'}
+										}),
+									_1: {
+										ctor: '::',
+										_0: A2(
+											_user$project$Main$button,
+											{
+												ctor: '::',
+												_0: _elm_lang$html$Html_Events$onClick(
+													_user$project$Main$Send(
+														_user$project$Main$encodeOutMsg(_user$project$Main$Reset))),
+												_1: {ctor: '[]'}
+											},
+											{
+												ctor: '::',
+												_0: _elm_lang$html$Html$text('Reset'),
+												_1: {ctor: '[]'}
+											}),
+										_1: {ctor: '[]'}
+									}
+								}
 							}
 						}),
 					_1: {ctor: '[]'}

@@ -70,6 +70,8 @@ data Message = Connecting Text
   | RegisterVote Text Int
   | DoFilmVote
   | StartRun
+  | Ending
+  | Reset
 
 data OutputState = Tree TOP
 
@@ -81,6 +83,8 @@ instance FromJSON Message where
       "vote" -> RegisterVote <$> o .: "localId" <*> o .: "index"
       "doFilmVote" -> return DoFilmVote
       "start" -> return StartRun
+      "reset" -> return Reset
+      "ending" -> return Ending
 
 data OutMsg = VotesMsg [(Text, Int)]  (Maybe Int)
 
@@ -91,10 +95,14 @@ type Effect = Tree TOP -> Tree TOP
 
 data CueAudioTrack = ATOne | ATTwo
 
+data TimerState = Start | Stop
+type Timer = (TVar TimerState, TMVar ())
+
 data TDState = TDState { _activeVotes :: ActiveVotes
                        , _filmVotesList :: [[((Color, Int), Int)]]
                        , _lastVoteWinner :: Maybe Text
                        , _voteTimer :: Maybe Int
+                       , _voteHaskellTimer :: Maybe Timer
                        , _voteAudio :: Maybe BS.ByteString 
                        , _movie :: MovieData
                        , _overlayVoteScreen :: Maybe MovieData
@@ -107,6 +115,7 @@ data TDState = TDState { _activeVotes :: ActiveVotes
                        , _inCamera :: Int
                        , _resetMovie :: Bool
                        , _resetVoteTimer :: Bool
+                       , _tally :: (Int, Int)
                        }
 
 data MovieData = MovieData { _movieId :: Int
@@ -155,9 +164,6 @@ instance Vote FilmVote where
   run (FilmVote _ (Overlay id)) td = td & overlays %~ ((films ! id):)
   voteText (FilmVote vt _) = vt
 
-data TimerState = Start | Stop
-type Timer = (TVar TimerState, TMVar ())
-
 activeVoteTexts :: ActiveVotes -> [ (Text, Int) ]
 activeVoteTexts (FilmVotes vs _) = fmap (over _1 (voteText . (!) filmVoteChoices . snd)) vs
 activeVoteTexts NoVotes = []
@@ -167,17 +173,18 @@ votedIndex lid (FilmVotes _ maplocalid) = lookup lid maplocalid
 votedIndex _ NoVotes = Nothing
 
 newServerState :: TOPRunner -> IO ServerState
-newServerState tr = newTDState >>= pure . ServerState [] tr
+newServerState tr = pure $ ServerState [] tr newTDState
 
-newTDState :: IO TDState
-newTDState = pure $
+newTDState :: TDState
+newTDState =
   TDState 
     NoVotes 
     filmVotes
     Nothing 
     Nothing 
     Nothing
-    (films ! 0) 
+    Nothing
+    (films ! 86) 
     Nothing
     []
     []
@@ -188,6 +195,7 @@ newTDState = pure $
     0
     False
     False
+    (0, 0)
 
 audios :: Map Int BS.ByteString
 audios = M.fromList [ (0, "Holme/Audrey.mp3")
@@ -247,6 +255,9 @@ films = M.fromList $ [ (0, MovieData 0 (printf "Holme/0%05b.mov" . _inCamera) 13
                    , (52, MovieData 52 (const "Holme/luxdie.mov") 120 False False 0)
                    , (84, MovieData 84 (const "Holme/SV3Western.mov") 120 True False 0)
                    , (85, MovieData 85 (const "Holme/SV3Shootout.mov") 120 False False 0)
+                   , (86, MovieData 85 (const "Holme/introloop.mov") 600 True False 0)
+                   , (87, MovieData 85 (const "Holme/orangeending.mov") 300 True False 0)
+                   , (88, MovieData 85 (const "Holme/blueending.mov") 300 True False 0)
                    ] ++ ((\i -> (52 + i, MovieData (52 + i) (const $ "Holme/todd" ++ (show i) ++ ".mov") 30 False False 0)) <$> [1..32])
 
                     
@@ -274,7 +285,7 @@ filmVoteChoices= M.fromList $
   , (10, FilmVote "Fish Cam" (Overlay 6))
   , (11, FilmVote "Mocap Man" (Overlay 12))
   , (12, FilmVote "Pelicans" (Overlay 49))
-  , (13, FilmVote "Mocap Man" (Overlay 12))
+  , (13, FilmVote "Space Opera" (InCamera 16))
   ]
 
 filmVotes :: [[ ((Color, Int), Int) ]]
@@ -307,7 +318,7 @@ renderTDState td@(TDState { _activeVotes
                           , _resetVoteTimer}) =
   (outTOP id $
     compositeTOP (compositeTOPoperand ?~ int 31) $ zipWith renderVote [0..] votes
-    ++ maybeToList (borderText (grey 1) 0.95 . (++) "Your vote is: " . unpack <$> _lastVoteWinner)
+    ++ maybeToList ((translate (0, -0.45)) . borderText (grey 1) 0.95 . (++) "Your vote is: " . unpack <$> _lastVoteWinner)
     ++ maybeToList
       (fmap (translate (0, (-0.45)) . resTexts (grey 1) . caststr . LD.floor)
           $ (!*) . msToF
@@ -332,14 +343,14 @@ renderTDState td@(TDState { _activeVotes
     audnorep s = audiofileinCHOP ((audiofileinCHOPrepeat ?~ int 0) . (audiofileinCHOPfile ?~ s))
     renderVote idx (col, tally, voteName) =
       borderText col 0.8 ((flip (++) $ ": " ++ show tally) . unpack $ voteName)
-      & translate (0, (1 - 0.2 * (fromIntegral $ idx) - 0.875))
+      & translate (((-0.25) + 0.5 * (fromIntegral $ idx)), -0.4)
     borderText c w t =
       compositeTOP (compositeTOPoperand ?~ int 31) 
                [ (resText c t)
                ]
     msToF = float . (flip (/) 1000.0) . fromIntegral
     mv rmov mf = mv' rmov mf mf
-    mv' rmov mft mf = moviefileinTOP ((moviefileinTOPplaymode ?~ int 0) . 
+    mv' rmov mft mf = moviefileinTOP ((moviefileinTOPplaymode ?~ int 1) . 
                                       ((?~) moviefileinTOPindex $ mvtimer rmov $ mft) . 
                                       (moviefileinTOPfile ?~ str ( (^.) mf movieFile td)))
     mvtimer rmov (MovieData{_movieFile, _movieCycle, _movieLength, _movieId}) = 
@@ -409,19 +420,60 @@ receive conn state (id, _) = do
     traceShowM msg
     case decode msg of
       (Just (RegisterVote localId i)) -> modifyTDState (updateVote localId i) state
-      (Just (DoFilmVote)) -> startTimer nextFilmVote
-      (Just (StartRun)) -> return ()
+      (Just (DoFilmVote)) -> forceVoteTimer
+      (Just (StartRun)) -> startVoteTimer
+      (Just (Reset)) -> do
+        stopTimerTDState
+        modifyTDState (const newTDState . endVote) state
+      (Just (Ending)) -> do
+        s <- readMVar state
+        let overlayval = if s ^. tdState . tally . _1 > s ^. tdState . tally . _2 then 87 else 88
+        modifyTDState ((overlays %~ ((films ! overlayval):)) . (overlayVoteScreen .~ Nothing) . (lastVoteWinner .~ Nothing)) state
+        putStrLn (show $ s ^. tdState . tally)
       (Just (Connecting _)) -> putStrLn "Connecting twice?"
       Nothing -> putStrLn "Unrecognized message"
   wait thr
   where
-    startTimer nextVote = do
-        let voteLength = 30000
-        timer <- newTimer voteLength
-        __ <- forkIO $ do
-          waitTimer timer
-          modifyTDState endVote state
-        modifyTDState ((voteTimer ?~ voteLength) . nextVote . (voteAudio ?~ audios ! 2)) state
+    startVoteTimer = do 
+      modifyTDState (changeReel 0) state
+      pauseTimer 10000 45000
+    regularVoteTimer = pauseTimer 15000 45000
+    forceVoteTimer = do
+      modifyTDState endVote state
+      s <- readMVar state
+      if L.null (s ^. tdState . filmVotesList) then
+        return ()
+      else
+        pauseTimer 0 45000
+      
+    stopTimerTDState = do
+      s <- readMVar state
+      maybe (return ()) stopTimer (s ^. tdState . voteHaskellTimer)
+
+    pauseTimer i j = do
+      stopTimerTDState
+      timer <- newTimer i
+      modifyMVar_ state (pure . (tdState . voteHaskellTimer ?~ timer))
+      __ <- forkIO $ do
+        waitTimer timer
+        modifyTDState ((voteTimer ?~ j) . nextFilmVote . (voteAudio ?~ audios ! 2) ) state
+        newVoteTimer i j
+      return ()
+
+    newVoteTimer i j = do
+      stopTimerTDState
+      timer <- newTimer j
+      modifyMVar_ state (pure . (tdState . voteHaskellTimer ?~ timer))
+      __ <- forkIO $ do
+        waitTimer timer
+        modifyTDState endVote state
+        s <- readMVar state
+        if L.null (s ^. tdState . filmVotesList) then
+          return ()
+        else
+          regularVoteTimer
+      return ()
+
 
 broadcast :: OutMsg -> [Client] -> IO ()
 broadcast msg cs = do
@@ -481,10 +533,13 @@ endVote td@(TDState { _activeVotes = FilmVotes vs _}) =
       (activeVotes .~ NoVotes) .
       (voteTimer .~ Nothing) .
       (lastVoteWinner ?~ (voteText maxVote'')) .
-      (Lux.run maxVote'')
+      (Lux.run maxVote'') .
+      (tally . _1 +~ snd (vs !! 0)) .
+      (tally . _2 +~ snd (vs !! 1))
+
 
 maxVote :: [(a, Int)] -> a
-maxVote = fst . maximumBy (flip (flip compare . snd) . snd)
+maxVote =  fst . maximumBy (flip (flip compare . snd) . snd)
 
 
 -- Timer

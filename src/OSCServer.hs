@@ -35,7 +35,7 @@ run state tree = run2 state tree ([] :: [Tree TOP])
 run2 :: (Op a, Op b) => IORef Messages -> [Tree a] -> [Tree b] -> IO ()
 run2 state tas tbs = do
   state' <- readIORef state
-  let state'' = compile tas tbs state'
+  let state'' = compile tas tbs mempty
       msgs' = [OSC.Message ("/json") [OSC.ASCII_String $ makeMessages state'']]
   writeIORef state state''
   conn <- OSC.openUDP "127.0.0.1" 9002

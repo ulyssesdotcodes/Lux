@@ -36,6 +36,8 @@ type alias Model =
 type OutgoingMsg = Connecting 
                  | DoFilmVote
                  | StartRun
+                 | Ending
+                 | Reset
 type IncomingMsg = Votes (List (String, Int))
 type VoteType = Show | Film
 
@@ -57,6 +59,8 @@ encodeOutMsg msg =
                                        , ("localId", Json.Encode.string "admin")]
       DoFilmVote -> Json.Encode.object [("type", Json.Encode.string "doFilmVote")]
       StartRun -> Json.Encode.object [("type", Json.Encode.string "start")]
+      Ending -> Json.Encode.object [("type", Json.Encode.string "ending")]
+      Reset -> Json.Encode.object [("type", Json.Encode.string "reset")]
 
 decodeInMsg : String -> Result String IncomingMsg
 decodeInMsg msg =
@@ -124,6 +128,8 @@ view model =
     , div [class [Control]]
       [ button [onClick (Send <| encodeOutMsg StartRun)] [text "Start"]
       , button [onClick (Send <| encodeOutMsg DoFilmVote)] [text "Force Vote"]
+      , button [onClick (Send <| encodeOutMsg Ending)] [text "Ending"]
+      , button [onClick (Send <| encodeOutMsg Reset)] [text "Reset"]
       ]
     ] ++ indexedMap (\i (t, _) -> p [] [text t]) model.votes
 

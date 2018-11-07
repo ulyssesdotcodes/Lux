@@ -13,6 +13,7 @@ diffs = []
 def apply(newState):
   global state
   # Step 1: create new nodes
+  print(newState)
   prevState = state
   state = newState
   ddiff = diff(prevState, state)
@@ -25,6 +26,7 @@ def apply(newState):
         addAll(diffi[2])
       elif diffi[0] == 'remove':
         for key,value in diffi[2]:
+          print("remove op" + key)
           curop = op("/project1/lambda" + key)
           if curop != None:
             curop.destroy()
